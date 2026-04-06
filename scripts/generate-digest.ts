@@ -33,51 +33,53 @@ async function classifyAndTranslate(
 ): Promise<DigestItem[]> {
   if (items.length === 0) return [];
 
-  const batchSize = 10;
+  const batchSize = 5;
   const results: DigestItem[] = [];
 
   for (let i = 0; i < items.length; i += batchSize) {
     const batch = items.slice(i, i + batchSize);
-    const prompt = `请处理以下${batch.length}条AI资讯，返回JSON数组，每个元素包含：
-id, titleZh, summaryZh, insight, relevance, tags(数组，3-5个中英文标签)
 
-资讯列表：
-${batch.map((item, idx) => `[${idx}] 标题: ${item.title}\n来源: ${item.source}\n内容: ${item.content.slice(0, 300)}`).join("\n\n")}
+    const prompt = `处理以下${batch.length}条AI资讯。对每条返回一个JSON对象，所有对象放在一个数组里。
 
-返回格式示例：
-[{"id":"0","titleZh":"...","summaryZh":"...","insight":"→ ...","relevance":"general","tags":["LLM","多模态"]}]`;
+字段说明：
+- titleZh: 中文标题（保留英文缩写）
+- summaryZh: 100字以内中文摘要
+- insight: 50字以内产品洞见，用"→"开头，说明对A2A/agent广告/GEO方向的影响
+- relevance: 只能是 a2a / agent-ads / geo / general 之一
+- tags: 3-5个标签的数组
+
+资讯：
+${batch.map((item, idx) => `[${idx}] ${item.title} | ${item.source} | ${item.content.slice(0, 200)}`).join("\n")}
+
+严格返回合法JSON数组，不要有多余文字，字符串内不要用双引号（用单引号或省略）：
+[{"titleZh":"","summaryZh":"","insight":"","relevance":"general","tags":[]}]`;
 
     try {
       const response = await client.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 4096,
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 2048,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: prompt }],
       });
 
       const text = response.content[0].type === "text" ? response.content[0].text : "";
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
-      if (!jsonMatch) continue;
 
-      // Sanitize common JSON issues: unescaped quotes inside strings
-      let jsonStr = jsonMatch[0];
-      // Try parse; if fails, extract individual objects with a fallback
+      // Extract JSON array
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) { console.warn(`[generate] No JSON in batch ${i}`); continue; }
+
       let parsed: Record<string, unknown>[];
       try {
-        parsed = JSON.parse(jsonStr);
+        parsed = JSON.parse(jsonMatch[0]);
       } catch {
-        // Fallback: try to extract each object individually
-        const objects = jsonStr.match(/\{[^{}]*\}/g) ?? [];
-        parsed = objects.flatMap((obj) => {
-          try { return [JSON.parse(obj)]; } catch { return []; }
-        });
-        if (parsed.length === 0) continue;
+        // Last resort: parse objects one by one
+        const objs = jsonMatch[0].match(/\{[\s\S]*?\}(?=\s*[,\]])/g) ?? [];
+        parsed = objs.flatMap((o) => { try { return [JSON.parse(o)]; } catch { return []; } });
       }
 
       parsed.forEach((p: Record<string, unknown>, idx: number) => {
         const original = batch[idx];
         if (!original) return;
-
         results.push({
           id: `${Date.now()}-${i + idx}`,
           title: original.title,
