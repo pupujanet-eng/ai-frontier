@@ -1,0 +1,157 @@
+{
+  "date": "2026-04-07",
+  "dateZh": "2026年4月7日 星期二",
+  "editorNote": "今天有三条信号值得重点关注：1）Google发布的A2A协议草案已进入社区讨论阶段，这直接影响你的A2A合作项目架构选型——建议提前对齐合作方技术栈；2）Karpathy的LLM-Wiki模式本质上是在验证「AI引擎偏好结构化、协作性内容」这一假设，这对GEO方向有直接指导意义：你的内容资产应优先考虑可被AI协作编辑和引用的格式；3）Meta发布的广告AI agent在CTR提升上有明确数据，但核心突破在于创意到投放的闭环自动化，这是你agent广告链路改造的参考基准。",
+  "highlights": [
+    {
+      "id": "demo-1",
+      "title": "Google Open-Sources Agent-to-Agent (A2A) Protocol Draft",
+      "titleZh": "Google开源A2A协议草案，多Agent协作标准化提速",
+      "summary": "Google released a draft specification for Agent-to-Agent (A2A) communication protocol, enabling standardized inter-agent collaboration across different AI systems.",
+      "summaryZh": "Google发布A2A通信协议草案，定义了不同AI系统间Agent交互的标准接口，已有15家头部AI公司表态支持。协议涵盖任务委托、状态同步、能力发现三大核心模块。",
+      "insight": "→ 直接相关你的A2A项目。建议本周评估：现有合作方是否在支持列表中，协议的能力发现模块可作为你对外合作的标准化接入层。",
+      "url": "https://github.com/google-deepmind/a2a",
+      "source": "GitHub Trending",
+      "category": "github",
+      "tags": ["A2A", "Agent协议", "MCP", "多Agent"],
+      "relevance": "a2a",
+      "date": "2026-04-07"
+    },
+    {
+      "id": "demo-2",
+      "title": "Andrej Karpathy: LLM-Wiki — Collaborative Knowledge Repository Pattern",
+      "titleZh": "Karpathy提出LLM-Wiki模式：把LLM当作可协作编辑的知识库",
+      "summary": "Karpathy proposed treating LLMs as collaborative, living knowledge repositories that can be continuously updated and queried, similar to Wikipedia but for AI-native knowledge.",
+      "summaryZh": "Karpathy在gist中提出LLM-Wiki实验：将LLM视为可持续演化的知识协作体，核心思路是用结构化提示词构建「活的知识库」，每次查询都在增量更新共识。被认为是RAG的进化方向之一。",
+      "insight": "→ GEO核心洞见：AI引擎偏爱「结构化+可验证+有来源」的内容。你的内容资产应优先建立可被AI引用的结构，而非传统SEO的关键词密度。",
+      "url": "https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f",
+      "source": "Andrej Karpathy",
+      "category": "thought-leader",
+      "tags": ["LLM-Wiki", "RAG", "GEO", "知识库", "Karpathy"],
+      "relevance": "geo",
+      "date": "2026-04-07"
+    },
+    {
+      "id": "demo-3",
+      "title": "Meta's Ad AI Agent Achieves 34% CTR Improvement in A/B Test",
+      "titleZh": "Meta广告AI Agent A/B测试CTR提升34%，创意到投放全链路自动化",
+      "summary": "Meta's new advertising AI agent autonomously generates creatives, selects audiences, and optimizes bids, achieving 34% CTR improvement in controlled testing across 1,000 advertisers.",
+      "summaryZh": "Meta发布广告AI Agent测试结果：在1000个广告主的受控实验中，CTR平均提升34%，核心能力是从品牌素材自动生成多版本创意并实时调优。最大突破是「创意理解→受众匹配→出价策略」的闭环自动化。",
+      "insight": "→ 这是你agent广告链路的参考基准。注意：Meta的优势在数据飞轮，你需要找到外投场景的差异化切入——建议聚焦素材生产和A/B测试自动化这两个杠杆点。",
+      "url": "https://ai.meta.com/blog/advertising-ai-agent",
+      "source": "VentureBeat AI",
+      "category": "industry",
+      "tags": ["广告AI", "Agent", "CTR优化", "Meta", "AIGC素材"],
+      "relevance": "agent-ads",
+      "date": "2026-04-07"
+    }
+  ],
+  "github": [
+    {
+      "id": "demo-gh-1",
+      "title": "browser-use/browser-use",
+      "titleZh": "browser-use：让AI Agent直接操控浏览器的开源框架",
+      "summary": "Web automation for AI agents. Supports Chrome, Firefox with natural language instructions.",
+      "summaryZh": "⭐ 48k | 今日+2.1k stars。让LLM通过自然语言直接操控浏览器，支持表单填写、信息抓取、多步骤任务。是目前最热的浏览器Agent框架，企业版已商用。",
+      "insight": "→ agent广告链路可用：自动化竞品素材监控、广告平台操作脚本化，降低人工操作成本。",
+      "url": "https://github.com/browser-use/browser-use",
+      "source": "GitHub Trending",
+      "category": "github",
+      "tags": ["Browser Agent", "自动化", "LLM", "爬虫"],
+      "relevance": "agent-ads",
+      "date": "2026-04-07"
+    },
+    {
+      "id": "demo-gh-2",
+      "title": "microsoft/markitdown",
+      "titleZh": "markitdown：微软出品，把任何文档转为AI友好的Markdown",
+      "summary": "Python tool to convert various file types (PDF, Word, Excel, images) to Markdown for LLM consumption.",
+      "summaryZh": "⭐ 41k | 微软开源文档转换工具，支持PDF/Word/Excel/PPT/图片全格式转Markdown，专为LLM输入优化。GEO场景直接可用。",
+      "insight": "→ GEO工具链：将你的内容资产批量转换为AI可消化格式，是构建AI引用友好知识库的基础设施。",
+      "url": "https://github.com/microsoft/markitdown",
+      "source": "GitHub Trending",
+      "category": "github",
+      "tags": ["文档处理", "Markdown", "GEO", "LLM工具"],
+      "relevance": "geo",
+      "date": "2026-04-07"
+    }
+  ],
+  "research": [
+    {
+      "id": "demo-r-1",
+      "title": "ReAct Agents Outperform Chain-of-Thought on Multi-Step Tasks",
+      "titleZh": "最新研究：ReAct框架在多步骤任务上全面超越CoT",
+      "summary": "New benchmark shows ReAct (Reasoning + Acting) agents achieve 23% higher task completion on complex multi-step scenarios compared to pure chain-of-thought approaches.",
+      "summaryZh": "ArXiv新论文：在200个多步骤任务基准上，ReAct框架（推理+行动交替）比纯CoT方法任务完成率高23%，尤其在需要外部工具调用的场景差距更大。",
+      "insight": "→ agent广告链路架构参考：投放优化agent应采用ReAct而非纯CoT，特别是在需要调用广告平台API的环节。",
+      "url": "https://arxiv.org/abs/2303.11366",
+      "source": "ArXiv CS.AI",
+      "category": "research",
+      "tags": ["ReAct", "Agent", "推理", "CoT对比"],
+      "relevance": "agent-ads",
+      "date": "2026-04-07"
+    }
+  ],
+  "industry": [
+    {
+      "id": "demo-i-1",
+      "title": "Perplexity AI Launches 'AI Answer Engine' Ad Product",
+      "titleZh": "Perplexity推出「AI答案引擎」广告产品，GEO商业化进入实质阶段",
+      "summary": "Perplexity AI announced a sponsored answers product that allows brands to appear in AI-generated responses, marking the commercialization of AI search advertising.",
+      "summaryZh": "Perplexity正式推出赞助答案产品，品牌可付费出现在AI生成的搜索答案中。这是AI搜索广告商业化的标志性节点，定价模式与Google Search Ads不同——按「答案曝光」而非「关键词点击」计费。",
+      "insight": "→ GEO核心动态：这意味着「被AI引用」即将成为可量化的商业价值。建议研究Perplexity的内容收录逻辑，提前布局你的GEO内容策略。",
+      "url": "https://www.perplexity.ai/hub/blog/advertising",
+      "source": "The Verge AI",
+      "category": "industry",
+      "tags": ["Perplexity", "GEO", "AI搜索广告", "商业化"],
+      "relevance": "geo",
+      "date": "2026-04-07"
+    }
+  ],
+  "thoughtLeaders": [
+    {
+      "id": "demo-tl-1",
+      "title": "Sam Altman: We are now past human-level AGI in narrow domains",
+      "titleZh": "Sam Altman：我们已在特定领域超过人类水平AGI，下一步是通用推理",
+      "summary": "Sam Altman's latest blog post argues that AI has already exceeded human performance in coding, certain reasoning tasks, and is approaching human-level general problem solving.",
+      "summaryZh": "Altman在最新博文中表示：AI在编程、部分推理任务上已超人类，预计18个月内在大多数知识工作领域达到同等水平。重点是「现在是使用AI的最佳时机，因为竞争窗口仍然存在」。",
+      "insight": "→ 战略判断：窗口期确实存在但在收窄。你的三个核心项目都处于「AI能力刚好够用」的节点——现在落地比等技术完美更重要。",
+      "url": "https://blog.samaltman.com",
+      "source": "Sam Altman Blog",
+      "category": "thought-leader",
+      "tags": ["AGI", "Sam Altman", "战略判断", "OpenAI"],
+      "relevance": "general",
+      "date": "2026-04-07"
+    }
+  ],
+  "chinese": [
+    {
+      "id": "demo-cn-1",
+      "title": "字节跳动内部Agent平台「豆包MarsCode」已服务超200个业务线",
+      "titleZh": "字节豆包MarsCode agent平台内部规模曝光：200+业务线，日调用量破千万",
+      "summary": "字节跳动内部AI agent平台的规模数据首次公开，显示大厂agent落地已进入规模化阶段。",
+      "summaryZh": "据机器之心报道，字节内部Agent编排平台已接入200+业务线，日均调用量超千万次。核心场景集中在内容创作、广告素材生成、客服自动化三块，ROI最高的是广告素材生成（人效提升5倍）。",
+      "insight": "→ 参照系：字节的路径是「先内部规模化验证，再对外商业化」。你的agent广告链路项目可参考其素材生成场景的ROI测算逻辑。",
+      "url": "https://www.jiqizhixin.com",
+      "source": "机器之心",
+      "category": "chinese",
+      "tags": ["字节跳动", "Agent平台", "广告素材", "豆包"],
+      "relevance": "agent-ads",
+      "date": "2026-04-07"
+    },
+    {
+      "id": "demo-cn-2",
+      "title": "阿里发布「通义千问-Long」支持100万token上下文，RAG或被替代",
+      "titleZh": "通义千问-Long 100万context窗口发布，长文档RAG架构面临重估",
+      "summary": "阿里发布支持100万token超长上下文的通义千问模型，对现有RAG架构提出挑战。",
+      "summaryZh": "通义千问新版本支持100万token上下文，相当于750本书全部塞进单次对话。量子位分析认为：对于中等规模知识库，long-context模型可能比RAG更准确且更简单。",
+      "insight": "→ GEO技术路线影响：超长context可能改变「检索+生成」的最优架构。建议评估你的GEO内容增强方案是否需要预留long-context切换空间。",
+      "url": "https://www.qbitai.com",
+      "source": "量子位",
+      "category": "chinese",
+      "tags": ["通义千问", "Long Context", "RAG", "阿里"],
+      "relevance": "geo",
+      "date": "2026-04-07"
+    }
+  ]
+}
