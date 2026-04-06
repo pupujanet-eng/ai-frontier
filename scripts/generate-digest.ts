@@ -59,7 +59,20 @@ ${batch.map((item, idx) => `[${idx}] 标题: ${item.title}\n来源: ${item.sourc
       const jsonMatch = text.match(/\[[\s\S]*\]/);
       if (!jsonMatch) continue;
 
-      const parsed = JSON.parse(jsonMatch[0]);
+      // Sanitize common JSON issues: unescaped quotes inside strings
+      let jsonStr = jsonMatch[0];
+      // Try parse; if fails, extract individual objects with a fallback
+      let parsed: Record<string, unknown>[];
+      try {
+        parsed = JSON.parse(jsonStr);
+      } catch {
+        // Fallback: try to extract each object individually
+        const objects = jsonStr.match(/\{[^{}]*\}/g) ?? [];
+        parsed = objects.flatMap((obj) => {
+          try { return [JSON.parse(obj)]; } catch { return []; }
+        });
+        if (parsed.length === 0) continue;
+      }
 
       parsed.forEach((p: Record<string, unknown>, idx: number) => {
         const original = batch[idx];
