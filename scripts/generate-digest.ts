@@ -229,6 +229,7 @@ async function main() {
 
   console.log(`[digest] ✅ Done! Saved to ${outputPath}`);
   console.log(`[digest] Items: ${allItems.length} total`);
+  process.exit(0);
 }
 
 main().catch((err) => {
