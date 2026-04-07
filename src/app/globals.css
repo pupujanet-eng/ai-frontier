@@ -2,66 +2,67 @@
 @import "tailwindcss";
 
 :root {
-  --bg-base: #0F0F0F;
-  --bg-surface: #161616;
-  --bg-elevated: #1E1E1E;
-  --bg-overlay: #242424;
-
-  --border-subtle: #222222;
-  --border-default: #2A2A2A;
-  --border-strong: #3E3E3E;
-
-  --text-primary: #F0F0F0;
-  --text-secondary: #A8A8A8;
-  --text-muted: #606060;
-
-  --accent-a2a: #8B5CF6;
-  --accent-agent-ads: #F97316;
-  --accent-geo: #06B6D4;
-  --accent-general: #6B7280;
-  --accent-blue: #3B82F6;
-  --accent-emerald: #10B981;
+  --bg-page:      #FAFAF8;
+  --bg-card:      #FFFFFF;
+  --bg-hover:     #F5F5F2;
+  --bg-section:   #F7F7F5;
+  --border-light: #EFEFEC;
+  --border-card:  #E8E8E4;
+  --border-strong:#D0D0CA;
+  --text-primary:   #1A1A18;
+  --text-secondary: #5A5A56;
+  --text-muted:     #9A9A94;
 }
 
 @theme inline {
-  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-sans: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 html {
-  background: var(--bg-base);
+  background: var(--bg-page);
   color: var(--text-primary);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--bg-base);
+  background: var(--bg-page);
   min-height: 100vh;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: var(--bg-base);
-}
-::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #444;
-}
+/* 滚动条 */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #D0D0CA; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #BABAB4; }
 
-/* Selection */
-::selection {
-  background: rgba(59, 130, 246, 0.3);
-  color: #fff;
+/* 选中 */
+::selection { background: rgba(37,99,235,0.12); color: #1A1A18; }
+
+/* 隐藏横向滚动条但保留功能 */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Markdown 内容样式 */
+.prose-digest p { margin: 0; line-height: 1.8; }
+.prose-digest strong { font-weight: 600; color: var(--text-primary); }
+.prose-digest em { font-style: italic; color: var(--text-secondary); }
+.prose-digest code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+  background: #F0EFE8;
+  border: 1px solid #E8E8E4;
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: #5A5A56;
 }
+.prose-digest a {
+  color: #2563EB;
+  text-decoration: underline;
+  text-decoration-color: rgba(37,99,235,0.3);
+}
+.prose-digest ul { padding-left: 1.25em; list-style: disc; }
+.prose-digest li { margin: 2px 0; }
