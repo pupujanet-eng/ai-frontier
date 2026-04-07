@@ -3,24 +3,25 @@ name: Daily Digest + Deploy
 on:
   schedule:
     - cron: "0 0 * * *"   # 每天 UTC 00:00 = 北京时间 08:00
-  workflow_dispatch:        # 手动触发
+  workflow_dispatch:        # 支持手动触发
 
 permissions:
   contents: write
   pages: write
   id-token: write
 
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 jobs:
-  # ── Job 1: 生成当日资讯 ──
-  generate:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -38,37 +39,16 @@ jobs:
 
       - name: Commit digest data
         run: |
-          git config user.name "AI Frontier Bot"
-          git config user.email "bot@ai-frontier.local"
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/
-          git diff --staged --quiet && echo "No changes to commit" || (git commit -m "data: daily digest $(date +'%Y-%m-%d')" && git push)
-
-  # ── Job 2: 构建并部署到 GitHub Pages ──
-  deploy:
-    needs: generate
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: main   # 拉取刚 commit 的数据
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
+          git diff --staged --quiet && echo "No new data" || git commit -m "data: $(date +'%Y-%m-%d')"
 
       - name: Build static site
         run: npm run build
+
+      - name: Push data commit
+        run: git push origin main
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
