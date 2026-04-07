@@ -10,22 +10,22 @@ import { useState, useEffect, useRef, useCallback } from "react";
 const RELEVANCE = {
   a2a:         { label: "A2A协作",   dot: "bg-violet-400", badge: "bg-violet-500/10 text-violet-400 border-violet-500/20", bar: "bg-violet-500" },
   "agent-ads": { label: "Agent广告", dot: "bg-orange-400", badge: "bg-orange-500/10 text-orange-400 border-orange-500/20", bar: "bg-orange-500" },
-  geo:         { label: "GEO增强",   dot: "bg-cyan-400",   badge: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",     bar: "bg-cyan-500"   },
-  general:     { label: "前沿动态",  dot: "bg-gray-500",   badge: "bg-gray-500/10 text-gray-500 border-gray-500/20",     bar: "bg-gray-600"   },
+  geo:         { label: "GEO增强",   dot: "bg-cyan-400",   badge: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",       bar: "bg-cyan-500"   },
+  general:     { label: "前沿动态",  dot: "bg-gray-500",   badge: "bg-gray-500/10 text-gray-500 border-gray-500/20",       bar: "bg-gray-600"   },
 };
 
 const SECTIONS = [
-  { id: "highlights",    label: "今日必读",  icon: "🔥", key: "1" },
-  { id: "github",        label: "GitHub热项", icon: "⬡", key: "2" },
-  { id: "thought",       label: "大佬观点",  icon: "◆", key: "3" },
-  { id: "industry",      label: "行业动态",  icon: "◉", key: "4" },
-  { id: "research",      label: "前沿研究",  icon: "◈", key: "5" },
-  { id: "chinese",       label: "国内快讯",  icon: "🇨🇳", key: "6" },
-  { id: "pm-focus",      label: "增长PM视角", icon: "✦", key: "7" },
+  { id: "highlights", label: "必读",    icon: "🔥", key: "1" },
+  { id: "github",     label: "GitHub",  icon: "⬡",  key: "2" },
+  { id: "thought",    label: "大佬",    icon: "◆",  key: "3" },
+  { id: "industry",   label: "行业",    icon: "◉",  key: "4" },
+  { id: "research",   label: "研究",    icon: "◈",  key: "5" },
+  { id: "chinese",    label: "国内",    icon: "🇨🇳", key: "6" },
+  { id: "pm-focus",   label: "PM视角",  icon: "✦",  key: "7" },
 ];
 
 /* ─────────────────────────────────────────
-   Sub-components
+   RelevanceBadge
 ───────────────────────────────────────── */
 
 function RelevanceBadge({ relevance }: { relevance: string }) {
@@ -37,6 +37,10 @@ function RelevanceBadge({ relevance }: { relevance: string }) {
     </span>
   );
 }
+
+/* ─────────────────────────────────────────
+   ItemCard
+───────────────────────────────────────── */
 
 function ItemCard({
   item, rank, focused = false, cardRef,
@@ -61,7 +65,7 @@ function ItemCard({
       `}
     >
       <div className={`absolute left-0 top-4 bottom-4 w-[2px] rounded-full ${cfg.bar} opacity-40 group-hover:opacity-70 transition-opacity`} />
-      <div className="p-5 pl-6">
+      <div className="p-4 pl-5 sm:p-5 sm:pl-6">
         <div className="flex items-start justify-between gap-3 mb-2.5">
           <div className="flex items-start gap-2 flex-1 min-w-0">
             {rank !== undefined && (
@@ -92,8 +96,8 @@ function ItemCard({
         <div className="flex items-center justify-between gap-2 pl-7">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-[11px] text-[#484848]">{item.source}</span>
-            {item.tags.slice(0, 3).map((tag) => (
-              <span key={tag} className="text-[11px] text-[#404040] bg-[#1C1C1C] border border-[#282828] px-1.5 py-0.5 rounded-full">
+            {item.tags.slice(0, 2).map((tag) => (
+              <span key={tag} className="text-[11px] text-[#404040] bg-[#1C1C1C] border border-[#282828] px-1.5 py-0.5 rounded-full hidden sm:inline">
                 {tag}
               </span>
             ))}
@@ -115,6 +119,10 @@ function ItemCard({
   );
 }
 
+/* ─────────────────────────────────────────
+   HighlightCard
+───────────────────────────────────────── */
+
 function HighlightCard({ item, index }: { item: DigestItem; index: number }) {
   const cfg = RELEVANCE[item.relevance as keyof typeof RELEVANCE] ?? RELEVANCE.general;
   return (
@@ -122,15 +130,15 @@ function HighlightCard({ item, index }: { item: DigestItem; index: number }) {
       href={item.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="group relative block rounded-2xl border p-5 transition-all duration-150 overflow-hidden bg-[#161616] border-[#2A2A2A] hover:bg-[#1A1A1A] hover:border-[#3A3A3A]"
+      className="group relative block rounded-2xl border p-4 sm:p-5 transition-all duration-150 overflow-hidden bg-[#161616] border-[#2A2A2A] hover:bg-[#1A1A1A] hover:border-[#3A3A3A]"
     >
       <div className={`absolute top-0 left-5 right-5 h-[1px] ${cfg.bar} opacity-25 group-hover:opacity-50 transition-opacity`} />
       <div className="flex items-center gap-2 mb-3">
         <span className="text-[10px] font-mono text-[#404040]">#{String(index + 1).padStart(2, "0")}</span>
         <RelevanceBadge relevance={item.relevance} />
-        <span className="text-[11px] text-[#404040]">{item.source}</span>
+        <span className="text-[11px] text-[#404040] hidden sm:inline">{item.source}</span>
       </div>
-      <h3 className="font-semibold text-[15px] text-[#E0E0E0] group-hover:text-white leading-snug mb-2 transition-colors">
+      <h3 className="font-semibold text-[14px] sm:text-[15px] text-[#E0E0E0] group-hover:text-white leading-snug mb-2 transition-colors">
         {item.titleZh || item.title}
       </h3>
       <p className="text-[13px] text-[#606060] leading-relaxed line-clamp-2 mb-3">
@@ -138,12 +146,16 @@ function HighlightCard({ item, index }: { item: DigestItem; index: number }) {
       </p>
       {item.insight && (
         <div className="bg-emerald-950/25 border-l-[2px] border-emerald-500/40 rounded-r-xl px-3 py-2">
-          <p className="text-[12px] text-emerald-400/80 leading-relaxed">{item.insight}</p>
+          <p className="text-[12px] text-emerald-400/80 leading-relaxed line-clamp-2">{item.insight}</p>
         </div>
       )}
     </a>
   );
 }
+
+/* ─────────────────────────────────────────
+   SectionBlock
+───────────────────────────────────────── */
 
 function SectionBlock({
   id, title, icon, items, defaultExpanded = true, cols = 2,
@@ -153,20 +165,19 @@ function SectionBlock({
 }) {
   const [open, setOpen] = useState(defaultExpanded);
   if (items.length === 0) return null;
-  const gridClass = { 1: "grid gap-3", 2: "grid gap-3 md:grid-cols-2", 3: "grid gap-3 md:grid-cols-2 lg:grid-cols-3" }[cols];
+  const gridClass = {
+    1: "grid gap-3",
+    2: "grid gap-3 md:grid-cols-2",
+    3: "grid gap-3 md:grid-cols-2 lg:grid-cols-3",
+  }[cols];
 
   return (
-    <section id={id} className="mb-10 scroll-mt-20">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between mb-4 group"
-      >
+    <section id={id} className="mb-8 scroll-mt-28">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between mb-4 group">
         <div className="flex items-center gap-2">
           <span className="text-[15px] leading-none">{icon}</span>
           <h2 className="text-[14px] font-semibold text-[#B0B0B0] tracking-tight">{title}</h2>
-          <span className="text-[10px] font-mono text-[#404040] bg-[#1A1A1A] border border-[#252525] px-1.5 py-0.5 rounded-full">
-            {items.length}
-          </span>
+          <span className="text-[10px] font-mono text-[#404040] bg-[#1A1A1A] border border-[#252525] px-1.5 py-0.5 rounded-full">{items.length}</span>
         </div>
         <span className={`text-[#404040] text-[10px] transition-transform duration-200 ${open ? "" : "rotate-180"}`}>▲</span>
       </button>
@@ -175,7 +186,10 @@ function SectionBlock({
   );
 }
 
-/* PM Focus 专栏 */
+/* ─────────────────────────────────────────
+   PMFocusSection
+───────────────────────────────────────── */
+
 function PMFocusSection({ digest }: { digest: DailyDigest }) {
   const all = [
     ...digest.highlights, ...digest.github, ...digest.research,
@@ -191,9 +205,8 @@ function PMFocusSection({ digest }: { digest: DailyDigest }) {
   };
 
   return (
-    <section id="pm-focus" className="scroll-mt-20">
-      {/* 分割线 + 标题 */}
-      <div className="flex items-center gap-4 mb-8">
+    <section id="pm-focus" className="scroll-mt-28">
+      <div className="flex items-center gap-4 mb-6">
         <div className="flex-1 h-[1px] bg-[#1E1E1E]" />
         <div className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#2A2A2A] bg-[#161616]">
           <span className="text-[12px]">✦</span>
@@ -201,19 +214,15 @@ function PMFocusSection({ digest }: { digest: DailyDigest }) {
         </div>
         <div className="flex-1 h-[1px] bg-[#1E1E1E]" />
       </div>
-
-      <p className="text-[12px] text-[#505050] mb-6 text-center">
-        以下内容从今日全部资讯中筛选，按三个核心项目方向分类
-      </p>
-
-      <div className="grid gap-6 md:grid-cols-3">
+      <p className="text-[12px] text-[#505050] mb-5 text-center">从今日资讯中筛选，按三个核心项目方向分类</p>
+      <div className="grid gap-4 sm:grid-cols-3">
         {(["a2a", "agent-ads", "geo"] as const).map((key) => {
           const cfg = RELEVANCE[key];
           const items = grouped[key];
           if (!items.length) return null;
           return (
             <div key={key}>
-              <div className={`flex items-center gap-2 mb-3 pb-2 border-b border-[#1E1E1E]`}>
+              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[#1E1E1E]">
                 <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
                 <span className="text-[12px] font-semibold text-[#A0A0A0]">{cfg.label}</span>
                 <span className="text-[11px] font-mono text-[#404040] ml-auto">{items.length}</span>
@@ -246,35 +255,62 @@ function PMFocusSection({ digest }: { digest: DailyDigest }) {
 }
 
 /* ─────────────────────────────────────────
-   Sidebar
+   Mobile Tab Nav（手机端顶部横向导航）
 ───────────────────────────────────────── */
 
-function Sidebar({
-  activeSection, digest, searchQuery, onSearch,
+function MobileTabNav({
+  activeSection, counts,
 }: {
   activeSection: string;
-  digest: DailyDigest;
+  counts: Record<string, number>;
+}) {
+  return (
+    <div
+      className="lg:hidden sticky top-14 z-40 border-b overflow-x-auto scrollbar-hide"
+      style={{ background: "rgba(15,15,15,0.95)", borderColor: "#1C1C1C" }}
+    >
+      <div className="flex items-center gap-1 px-4 py-2 min-w-max">
+        {SECTIONS.map(({ id, label, icon }) => {
+          const count = counts[id] ?? 0;
+          if (!count) return null;
+          const active = activeSection === id;
+          return (
+            <button
+              key={id}
+              onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" })}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all duration-150 shrink-0 ${
+                active
+                  ? "bg-[#2A2A2A] text-[#E0E0E0]"
+                  : "text-[#606060] hover:text-[#A0A0A0]"
+              }`}
+            >
+              <span className="text-[11px]">{icon}</span>
+              {label}
+              <span className="text-[10px] font-mono text-[#404040]">{count}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────
+   Desktop Sidebar（桌面端左侧导航）
+───────────────────────────────────────── */
+
+function DesktopSidebar({
+  activeSection, counts, searchQuery, onSearch,
+}: {
+  activeSection: string;
+  counts: Record<string, number>;
   searchQuery: string;
   onSearch: (q: string) => void;
 }) {
-  const all = [
-    ...digest.highlights, ...digest.github, ...digest.research,
-    ...digest.industry, ...digest.thoughtLeaders, ...digest.chinese,
-  ];
-  const counts: Record<string, number> = {
-    highlights:   digest.highlights.length,
-    github:       digest.github.length,
-    thought:      digest.thoughtLeaders.length,
-    industry:     digest.industry.length,
-    research:     digest.research.length,
-    chinese:      digest.chinese.length,
-    "pm-focus":   all.filter((i) => i.relevance !== "general").length,
-  };
-
   return (
-    <aside className="w-52 shrink-0 sticky top-14 self-start h-[calc(100vh-3.5rem)] flex flex-col pt-6 pr-4">
+    <aside className="hidden lg:flex w-48 shrink-0 sticky top-14 self-start h-[calc(100vh-3.5rem)] flex-col pt-6 pr-4">
       {/* Search */}
-      <div className="relative mb-6">
+      <div className="relative mb-5">
         <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[#404040]" width="12" height="12" viewBox="0 0 16 16" fill="none">
           <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.5"/>
           <path d="M10.5 10.5L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
@@ -296,14 +332,11 @@ function Sidebar({
           if (!count) return null;
           const active = activeSection === id;
           return (
-            <a
+            <button
               key={id}
-              href={`#${id}`}
-              onClick={(e) => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }); }}
-              className={`flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-150 group ${
-                active
-                  ? "bg-[#1E1E1E] text-[#E0E0E0]"
-                  : "text-[#606060] hover:bg-[#161616] hover:text-[#A0A0A0]"
+              onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" })}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-150 group text-left ${
+                active ? "bg-[#1E1E1E] text-[#E0E0E0]" : "text-[#606060] hover:bg-[#161616] hover:text-[#A0A0A0]"
               }`}
             >
               <div className="flex items-center gap-2">
@@ -314,23 +347,18 @@ function Sidebar({
                 <span className="text-[10px] font-mono text-[#383838]">{count}</span>
                 <kbd className="text-[9px] text-[#303030] border border-[#252525] rounded px-1 hidden group-hover:inline">{key}</kbd>
               </div>
-            </a>
+            </button>
           );
         })}
       </nav>
 
       {/* Keyboard hint */}
       <div className="mt-4 pt-4 border-t border-[#1A1A1A] pb-6">
-        <p className="text-[10px] text-[#383838] mb-1.5 font-medium uppercase tracking-wider">键盘快捷键</p>
-        {[
-          ["j / k", "上下翻"],
-          ["1–7",   "跳转区块"],
-          ["/",     "搜索"],
-          ["Esc",   "清除搜索"],
-        ].map(([key, desc]) => (
-          <div key={key} className="flex items-center justify-between mb-1">
-            <kbd className="text-[10px] text-[#484848] bg-[#161616] border border-[#252525] rounded px-1.5 py-0.5 font-mono">{key}</kbd>
-            <span className="text-[10px] text-[#383838]">{desc}</span>
+        <p className="text-[10px] text-[#383838] mb-1.5 font-medium uppercase tracking-wider">快捷键</p>
+        {[["j/k","上下翻"],["1–7","跳转"],["/ ","搜索"],["Esc","清除"]].map(([k, d]) => (
+          <div key={k} className="flex items-center justify-between mb-1">
+            <kbd className="text-[10px] text-[#484848] bg-[#161616] border border-[#252525] rounded px-1.5 py-0.5 font-mono">{k}</kbd>
+            <span className="text-[10px] text-[#383838]">{d}</span>
           </div>
         ))}
       </div>
@@ -348,14 +376,9 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
   const [focusedIdx, setFocusedIdx]       = useState(-1);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  /* Flatten all items for keyboard j/k navigation */
   const allItems: DigestItem[] = [
-    ...digest.highlights,
-    ...digest.github,
-    ...digest.thoughtLeaders,
-    ...digest.industry,
-    ...digest.research,
-    ...digest.chinese,
+    ...digest.highlights, ...digest.github, ...digest.thoughtLeaders,
+    ...digest.industry, ...digest.research, ...digest.chinese,
   ];
 
   const filteredItems = searchQuery.trim()
@@ -371,9 +394,18 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
       })
     : null;
 
-  /* Intersection observer for active sidebar section */
+  const counts: Record<string, number> = {
+    highlights: digest.highlights.length,
+    github:     digest.github.length,
+    thought:    digest.thoughtLeaders.length,
+    industry:   digest.industry.length,
+    research:   digest.research.length,
+    chinese:    digest.chinese.length,
+    "pm-focus": allItems.filter((i) => i.relevance !== "general").length,
+  };
+
+  /* Intersection observer */
   useEffect(() => {
-    const sectionIds = SECTIONS.map((s) => s.id);
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -382,7 +414,7 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
       },
       { rootMargin: "-20% 0px -70% 0px" }
     );
-    sectionIds.forEach((id) => {
+    SECTIONS.forEach(({ id }) => {
       const el = document.getElementById(id);
       if (el) observer.observe(el);
     });
@@ -394,35 +426,25 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
     const tag = (e.target as HTMLElement).tagName;
     const isInput = tag === "INPUT" || tag === "TEXTAREA";
 
-    /* / → focus search */
     if (e.key === "/" && !isInput) {
       e.preventDefault();
       document.getElementById("search-input")?.focus();
       return;
     }
-
-    /* Esc → clear search */
     if (e.key === "Escape") {
-      setSearchQuery("");
-      setFocusedIdx(-1);
+      setSearchQuery(""); setFocusedIdx(-1);
       (document.activeElement as HTMLElement)?.blur();
       return;
     }
-
-    /* 1-7 → jump to section */
     if (!isInput && e.key >= "1" && e.key <= "7") {
       const sec = SECTIONS[parseInt(e.key) - 1];
-      if (sec) { document.getElementById(sec.id)?.scrollIntoView({ behavior: "smooth" }); }
+      if (sec) document.getElementById(sec.id)?.scrollIntoView({ behavior: "smooth" });
       return;
     }
-
-    /* j / k → move focus through cards */
     if (!isInput && (e.key === "j" || e.key === "k")) {
       e.preventDefault();
       const items = filteredItems ?? allItems;
-      const next = e.key === "j"
-        ? Math.min(focusedIdx + 1, items.length - 1)
-        : Math.max(focusedIdx - 1, 0);
+      const next = e.key === "j" ? Math.min(focusedIdx + 1, items.length - 1) : Math.max(focusedIdx - 1, 0);
       setFocusedIdx(next);
       cardRefs.current[next]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
       cardRefs.current[next]?.focus();
@@ -434,18 +456,16 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  const displayItems = filteredItems ?? allItems;
-
   return (
     <div className="min-h-screen" style={{ background: "var(--bg-base)" }}>
 
       {/* ── Header ── */}
       <header
         className="sticky top-0 z-50 border-b"
-        style={{ background: "rgba(15,15,15,0.88)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "#1C1C1C" }}
+        style={{ background: "rgba(15,15,15,0.92)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderColor: "#1C1C1C" }}
       >
-        <div className="max-w-[1280px] mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shrink-0">
               <span className="text-[11px] font-bold text-white">AI</span>
             </div>
@@ -453,48 +473,69 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
             <span className="text-[10px] text-[#383838] border border-[#252525] px-2 py-0.5 rounded-full hidden sm:inline">Daily</span>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {/* 手机端搜索图标 */}
+            <button
+              className="lg:hidden text-[#505050] hover:text-[#909090] transition-colors"
+              onClick={() => document.getElementById("mobile-search")?.focus()}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M10.5 10.5L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </button>
             <span className="text-[12px] text-[#404040] font-mono hidden md:block">{digest.date}</span>
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[11px] text-[#505050]">已更新</span>
+              <span className="text-[11px] text-[#505050] hidden sm:inline">已更新</span>
             </div>
-            <a
-              href="https://github.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[11px] text-[#404040] hover:text-[#808080] transition-colors hidden sm:block"
-            >
-              GitHub ↗
-            </a>
           </div>
         </div>
       </header>
 
-      {/* ── Body: sidebar + content ── */}
-      <div className="max-w-[1280px] mx-auto px-6 flex gap-8">
+      {/* ── 手机端 Tab 导航 ── */}
+      <MobileTabNav activeSection={activeSection} counts={counts} />
 
-        {/* Sidebar */}
-        <Sidebar
+      {/* ── Body ── */}
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 flex gap-8">
+
+        {/* 桌面端侧边栏 */}
+        <DesktopSidebar
           activeSection={activeSection}
-          digest={digest}
+          counts={counts}
           searchQuery={searchQuery}
           onSearch={(q) => { setSearchQuery(q); setFocusedIdx(-1); }}
         />
 
-        {/* Main content */}
-        <main className="flex-1 min-w-0 py-8">
+        {/* Main */}
+        <main className="flex-1 min-w-0 py-6 sm:py-8">
 
-          {/* Hero row */}
-          <div className="mb-8">
-            <h1 className="text-[24px] font-bold text-[#E8E8E8] tracking-tight mb-1">每日AI前沿速览</h1>
-            <p className="text-[13px] text-[#505050]">{digest.dateZh} · {allItems.length} 条精选</p>
+          {/* 手机端搜索框 */}
+          <div className="relative mb-5 lg:hidden">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[#404040]" width="12" height="12" viewBox="0 0 16 16" fill="none">
+              <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M10.5 10.5L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            <input
+              id="mobile-search"
+              type="text"
+              placeholder="搜索资讯..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setFocusedIdx(-1); }}
+              className="w-full bg-[#161616] border border-[#2A2A2A] rounded-xl pl-8 pr-3 py-2.5 text-[13px] text-[#C0C0C0] placeholder-[#404040] outline-none focus:border-[#3E3E3E] transition-colors"
+            />
+          </div>
+
+          {/* Hero */}
+          <div className="mb-6">
+            <h1 className="text-[20px] sm:text-[24px] font-bold text-[#E8E8E8] tracking-tight mb-1">每日AI前沿速览</h1>
+            <p className="text-[12px] sm:text-[13px] text-[#505050]">{digest.dateZh} · {allItems.length} 条精选</p>
           </div>
 
           {/* Editor Note */}
           {digest.editorNote && (
             <div
-              className="mb-8 rounded-2xl p-5 border"
+              className="mb-7 rounded-2xl p-4 sm:p-5 border"
               style={{ background: "rgba(255,255,255,0.02)", backdropFilter: "blur(8px)", borderColor: "rgba(255,255,255,0.06)" }}
             >
               <div className="flex items-center gap-2 mb-2.5">
@@ -508,24 +549,18 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
             </div>
           )}
 
-          {/* ── Search results mode ── */}
+          {/* ── 搜索结果 ── */}
           {searchQuery && (
-            <div className="mb-10">
+            <div className="mb-8">
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-[12px] text-[#606060]">搜索</span>
                 <span className="text-[12px] font-mono text-[#C0C0C0] bg-[#1A1A1A] border border-[#2A2A2A] px-2 py-0.5 rounded">&quot;{searchQuery}&quot;</span>
-                <span className="text-[12px] text-[#505050]">· {filteredItems?.length ?? 0} 条结果</span>
+                <span className="text-[12px] text-[#505050]">· {filteredItems?.length ?? 0} 条</span>
                 <button onClick={() => setSearchQuery("")} className="ml-auto text-[11px] text-[#404040] hover:text-[#808080] transition-colors">清除 ✕</button>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 {(filteredItems ?? []).map((item, i) => (
-                  <ItemCard
-                    key={item.id}
-                    item={item}
-                    rank={i}
-                    focused={focusedIdx === i}
-                    cardRef={(el) => { cardRefs.current[i] = el; }}
-                  />
+                  <ItemCard key={item.id} item={item} rank={i} focused={focusedIdx === i} cardRef={(el) => { cardRefs.current[i] = el; }} />
                 ))}
                 {(filteredItems?.length ?? 0) === 0 && (
                   <p className="text-[13px] text-[#404040] col-span-2 py-8 text-center">没有找到相关内容</p>
@@ -534,51 +569,49 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
             </div>
           )}
 
-          {/* ── Normal mode ── */}
+          {/* ── 正常模式 ── */}
           {!searchQuery && (
             <>
               {/* Highlights */}
               {digest.highlights.length > 0 && (
-                <section id="highlights" className="mb-10 scroll-mt-20">
+                <section id="highlights" className="mb-8 scroll-mt-28">
                   <div className="flex items-center gap-2 mb-4">
                     <span className="text-[15px]">🔥</span>
                     <h2 className="text-[14px] font-semibold text-[#B0B0B0] tracking-tight">今日必读</h2>
                     <span className="text-[10px] font-mono text-[#404040] bg-[#1A1A1A] border border-[#252525] px-1.5 py-0.5 rounded-full">{digest.highlights.length}</span>
                   </div>
-                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {digest.highlights.map((item, i) => <HighlightCard key={item.id} item={item} index={i} />)}
                   </div>
                 </section>
               )}
 
-              <div className="border-t border-[#1A1A1A] mb-10" />
+              <div className="border-t border-[#1A1A1A] mb-8" />
 
-              {/* Two-col layout */}
+              {/* 双列布局（手机单列） */}
               <div className="grid gap-x-6 lg:grid-cols-2">
                 <div>
-                  <SectionBlock id="github"   title="GitHub 热项" icon="⬡" items={digest.github}        defaultExpanded={true} />
-                  <SectionBlock id="thought"  title="大佬观点"     icon="◆" items={digest.thoughtLeaders} defaultExpanded={true} />
+                  <SectionBlock id="github"   title="GitHub 热项" icon="⬡"  items={digest.github}         />
+                  <SectionBlock id="thought"  title="大佬观点"     icon="◆"  items={digest.thoughtLeaders}  />
                 </div>
                 <div>
-                  <SectionBlock id="industry" title="行业动态"     icon="◉" items={digest.industry}       defaultExpanded={true} />
-                  <SectionBlock id="chinese"  title="国内快讯"     icon="🇨🇳" items={digest.chinese}      defaultExpanded={true} />
+                  <SectionBlock id="industry" title="行业动态"     icon="◉"  items={digest.industry}        />
+                  <SectionBlock id="chinese"  title="国内快讯"     icon="🇨🇳" items={digest.chinese}         />
                 </div>
               </div>
 
-              {/* Research — full width, collapsed */}
-              <SectionBlock id="research" title="前沿研究" icon="◈" items={digest.research} defaultExpanded={false} cols={2} />
+              <SectionBlock id="research" title="前沿研究" icon="◈" items={digest.research} defaultExpanded={false} />
 
-              {/* PM Focus 专栏 */}
-              <div className="mt-10">
+              <div className="mt-8">
                 <PMFocusSection digest={digest} />
               </div>
             </>
           )}
 
           {/* Footer */}
-          <footer className="mt-16 pt-6 border-t border-[#181818]">
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <span className="text-[11px] text-[#383838]">AI Frontier · 由 Claude API 每日自动生成 · 数据来源：GitHub / ArXiv / RSS</span>
+          <footer className="mt-12 pt-6 border-t border-[#181818]">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <span className="text-[11px] text-[#383838]">AI Frontier · Claude API 每日自动生成</span>
               <div className="flex items-center gap-3">
                 {(["a2a","agent-ads","geo"] as const).map((k) => (
                   <span key={k} className="flex items-center gap-1 text-[10px] text-[#383838]">
