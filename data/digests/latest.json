@@ -74,6 +74,48 @@
       "tags": ["文档处理", "Markdown", "GEO", "LLM工具"],
       "relevance": "geo",
       "date": "2026-04-07"
+    },
+    {
+      "id": "demo-gh-3",
+      "title": "langchain-ai/langgraph",
+      "titleZh": "LangGraph：构建有状态多Agent工作流的图编排框架",
+      "summary": "Build stateful, multi-actor applications with LLMs, with first-class support for cycles, branching, and human-in-the-loop.",
+      "summaryZh": "⭐ 12k | 今日+890 stars。LangChain推出的Agent工作流编排框架，支持有状态循环图、分支、人工介入节点。相比简单的Chain，LangGraph更适合复杂的多Agent协作场景。",
+      "insight": "→ A2A项目参考：LangGraph的图结构编排思路与A2A协议中的任务路由机制高度相关，可作为内部实现参考。",
+      "url": "https://github.com/langchain-ai/langgraph",
+      "source": "GitHub Trending",
+      "category": "github",
+      "tags": ["LangGraph", "Agent编排", "多Agent", "状态机"],
+      "relevance": "a2a",
+      "date": "2026-04-07"
+    },
+    {
+      "id": "demo-gh-4",
+      "title": "ggerganov/llama.cpp",
+      "titleZh": "llama.cpp：本地大模型推理新高峰，Llama 3支持速度翻倍",
+      "summary": "High-performance LLM inference in C/C++. Latest update brings 2x speed improvement for Llama 3 models and new quantization options.",
+      "summaryZh": "⭐ 67k | 今日+1.5k stars。最新版本对Llama 3推理速度提升2倍，新增Q6_K量化格式。本地部署成本继续下降，M2 MacBook Pro可流畅运行70B参数模型。",
+      "insight": "→ 基础设施趋势：本地推理成本快速下降意味着隐私敏感场景（如广告数据处理）的AI落地门槛在降低。",
+      "url": "https://github.com/ggerganov/llama.cpp",
+      "source": "GitHub Trending",
+      "category": "github",
+      "tags": ["本地推理", "Llama", "量化", "边缘计算"],
+      "relevance": "general",
+      "date": "2026-04-07"
+    },
+    {
+      "id": "demo-gh-5",
+      "title": "mem0ai/mem0",
+      "titleZh": "mem0：为AI Agent提供持久记忆层的开源方案",
+      "summary": "The Memory layer for AI Agents and LLM Apps. Enables persistent, adaptive memory across conversations and agent sessions.",
+      "summaryZh": "⭐ 23k | 今日+650 stars。为LLM应用提供持久化记忆层，支持跨对话、跨Agent会话的用户偏好和上下文记忆。已被集成进多个主流Agent框架。",
+      "insight": "→ A2A协作增强：持久记忆层是Agent间「认识彼此」的基础设施。你的A2A合作项目应考虑引入记忆机制来提升Agent协作的连续性。",
+      "url": "https://github.com/mem0ai/mem0",
+      "source": "GitHub Trending",
+      "category": "github",
+      "tags": ["Agent记忆", "持久化", "LLM上下文", "mem0"],
+      "relevance": "a2a",
+      "date": "2026-04-07"
     }
   ],
   "research": [
@@ -106,6 +148,48 @@
       "tags": ["Perplexity", "GEO", "AI搜索广告", "商业化"],
       "relevance": "geo",
       "date": "2026-04-07"
+    },
+    {
+      "id": "demo-i-2",
+      "title": "Anthropic raises $3.5B Series E at $61.5B valuation",
+      "titleZh": "Anthropic完成35亿美元E轮融资，估值615亿，Claude生态加速扩张",
+      "summary": "Anthropic announced a $3.5B Series E funding round led by Google, with participation from Spark Capital and others, valuing the company at $61.5 billion.",
+      "summaryZh": "Anthropic宣布完成35亿美元E轮融资，估值达615亿美元，由Google领投。本轮资金将主要用于模型研发、API基础设施扩容和企业合规能力建设，Claude 4系列将于今年发布。",
+      "insight": "→ Claude API依赖方注意：Anthropic估值走高意味着API价格短期内相对稳定，但长期需关注定价策略变化对你项目成本结构的影响。",
+      "url": "https://www.anthropic.com/news/series-e",
+      "source": "VentureBeat AI",
+      "category": "industry",
+      "tags": ["Anthropic", "融资", "Claude", "估值"],
+      "relevance": "general",
+      "date": "2026-04-07"
+    },
+    {
+      "id": "demo-i-3",
+      "title": "OpenAI launches Operator: autonomous web agent in ChatGPT Plus",
+      "titleZh": "OpenAI发布Operator：ChatGPT Plus内置自主网页操作Agent",
+      "summary": "OpenAI's Operator agent can autonomously browse the web, fill forms, make purchases, and complete multi-step digital tasks within ChatGPT Plus subscriptions.",
+      "summaryZh": "OpenAI推出Operator，允许ChatGPT自主操作浏览器完成多步骤任务，包括订餐、填表、购物等。目前仅对Plus用户开放，支持超过100个主流网站的深度集成，错误率在受控任务下低于3%。",
+      "insight": "→ A2A竞品参考：Operator是OpenAI的Agent实体化路径，与你的A2A协议方向互补而非竞争——你的核心是Agent间协议标准化，Operator是终端执行层。",
+      "url": "https://openai.com/operator",
+      "source": "TLDR AI",
+      "category": "industry",
+      "tags": ["OpenAI", "Operator", "Web Agent", "自动化"],
+      "relevance": "a2a",
+      "date": "2026-04-07"
+    },
+    {
+      "id": "demo-i-4",
+      "title": "Salesforce Einstein AI sees 40% adoption spike after Agentforce launch",
+      "titleZh": "Salesforce Agentforce发布后Einstein AI使用率暴增40%，企业Agent元年来临",
+      "summary": "Salesforce reported a 40% quarter-over-quarter increase in Einstein AI feature adoption following the launch of their Agentforce autonomous agent platform for enterprise CRM.",
+      "summaryZh": "Salesforce财报显示Agentforce发布后，Einstein AI功能使用率环比增长40%。核心数据：平均每个企业部署了3.2个自定义Agent，最热门场景是销售跟进自动化和客服工单分类。",
+      "insight": "→ 企业Agent市场信号：B端接受度远超预期。你的agent广告链路项目可参考Salesforce的「场景化Agent打包」策略——不要卖平台，卖具体场景解决方案。",
+      "url": "https://www.salesforce.com/news/press-releases/agentforce",
+      "source": "VentureBeat AI",
+      "category": "industry",
+      "tags": ["Salesforce", "企业Agent", "CRM", "Agentforce"],
+      "relevance": "agent-ads",
+      "date": "2026-04-07"
     }
   ],
   "thoughtLeaders": [
@@ -121,6 +205,48 @@
       "category": "thought-leader",
       "tags": ["AGI", "Sam Altman", "战略判断", "OpenAI"],
       "relevance": "general",
+      "date": "2026-04-07"
+    },
+    {
+      "id": "demo-tl-2",
+      "title": "Andrej Karpathy: The bitter lesson still wins — scale beats clever",
+      "titleZh": "Karpathy：苦涩教训依然成立——规模碾压技巧",
+      "summary": "Karpathy revisits Rich Sutton's 'bitter lesson' in the context of modern LLMs, arguing that compute scaling continues to outperform hand-crafted architectural innovations.",
+      "summaryZh": "Karpathy在推文中回顾Sutton「苦涩教训」：过去30年AI史证明，简单规模扩展总是击败精心设计的方法。他补充：这对创业者的含义是——不要把赌注押在模型架构创新上，而是押在应用层。",
+      "insight": "→ 对你的三个项目都是利好：应用层创新（A2A协议、广告链路、GEO）是正确方向，不需要等模型层突破。",
+      "url": "https://twitter.com/karpathy",
+      "source": "Andrej Karpathy",
+      "category": "thought-leader",
+      "tags": ["Karpathy", "Scaling Law", "应用层", "战略"],
+      "relevance": "general",
+      "date": "2026-04-07"
+    },
+    {
+      "id": "demo-tl-3",
+      "title": "Ethan Mollick: AI agents will change org charts before they change jobs",
+      "titleZh": "Mollick：AI Agent先改变组织架构，再改变岗位",
+      "summary": "Wharton professor Ethan Mollick argues that AI agents will first restructure how organizations coordinate work, creating new management layers for human-AI teams.",
+      "summaryZh": "沃顿商学院Mollick教授新文章：AI Agent首先影响的不是「谁失业」，而是「如何协作」——人机混合团队的协调成本将重构企业组织设计，出现新的「AI管理者」角色。",
+      "insight": "→ A2A项目视角：Agent间的协作协议（你的核心方向）本质上是在构建组织架构的技术底座，市场教育成本可能低于预期。",
+      "url": "https://substack.com/ethanmollick",
+      "source": "One Useful Thing",
+      "category": "thought-leader",
+      "tags": ["AI Agent", "组织设计", "人机协作", "Mollick"],
+      "relevance": "a2a",
+      "date": "2026-04-07"
+    },
+    {
+      "id": "demo-tl-4",
+      "title": "Benedict Evans: Every company is now an AI company (whether ready or not)",
+      "titleZh": "Benedict Evans：每家公司都已经是AI公司，不管准没准备好",
+      "summary": "Tech analyst Benedict Evans argues AI is now infrastructure, not a differentiator — the question is no longer 'should we use AI' but 'how fast can we integrate it operationally'.",
+      "summaryZh": "科技分析师Evans在年度报告中写道：AI已是基础设施而非差异化竞争优势，问题变成「我们能多快在运营层整合AI」。他认为未来2年内，AI落地速度将成为企业最核心的竞争力指标。",
+      "insight": "→ 广告链路改造的时间窗口信号：竞争对手也在快速整合，你的agent广告链路项目应以「快速试跑」而非「完美方案」为目标。",
+      "url": "https://www.ben-evans.com",
+      "source": "Benedict Evans",
+      "category": "thought-leader",
+      "tags": ["AI战略", "企业落地", "基础设施", "竞争"],
+      "relevance": "agent-ads",
       "date": "2026-04-07"
     }
   ],

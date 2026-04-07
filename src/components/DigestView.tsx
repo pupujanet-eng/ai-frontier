@@ -9,10 +9,10 @@ import ReactMarkdown from "react-markdown";
 ───────────────────────────────────────── */
 
 const RELEVANCE = {
-  a2a:         { label: "A2A协作",   dot: "bg-violet-400", badge: "bg-violet-50 text-violet-600 border-violet-100",   bar: "bg-violet-400" },
-  "agent-ads": { label: "Agent广告", dot: "bg-orange-400", badge: "bg-orange-50 text-orange-600 border-orange-100",   bar: "bg-orange-400" },
-  geo:         { label: "GEO增强",   dot: "bg-cyan-400",   badge: "bg-cyan-50 text-cyan-700 border-cyan-100",         bar: "bg-cyan-400"   },
-  general:     { label: "前沿动态",  dot: "bg-stone-300",  badge: "bg-stone-50 text-stone-500 border-stone-200",      bar: "bg-stone-300"  },
+  a2a:         { label: "A2A协作",   dot: "bg-violet-400", badge: "bg-violet-50 text-violet-600",   bar: "bg-violet-300" },
+  "agent-ads": { label: "Agent广告", dot: "bg-orange-400", badge: "bg-orange-50 text-orange-600",   bar: "bg-orange-300" },
+  geo:         { label: "GEO增强",   dot: "bg-cyan-400",   badge: "bg-cyan-50 text-cyan-700",       bar: "bg-cyan-300"   },
+  general:     { label: "前沿动态",  dot: "bg-stone-300",  badge: "bg-stone-100 text-stone-500",    bar: "bg-stone-200"  },
 };
 
 const SECTIONS = [
@@ -32,7 +32,7 @@ const SECTIONS = [
 function RelevanceBadge({ relevance }: { relevance: string }) {
   const cfg = RELEVANCE[relevance as keyof typeof RELEVANCE] ?? RELEVANCE.general;
   return (
-    <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border shrink-0 ${cfg.badge}`}>
+    <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 ${cfg.badge}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
       {cfg.label}
     </span>
@@ -66,17 +66,14 @@ function ItemCard({
       ref={cardRef}
       tabIndex={-1}
       className={`
-        relative group rounded-2xl border transition-all duration-200 overflow-hidden outline-none bg-white
+        group rounded-2xl transition-all duration-200 outline-none bg-[#FEFEFE]
         ${focused
-          ? "border-[#D0D0CA] shadow-md ring-2 ring-blue-100"
-          : "border-[#E8E8E4] hover:border-[#D0D0CA] hover:shadow-sm"
+          ? "shadow-md ring-2 ring-blue-100"
+          : "shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:shadow-[0_3px_12px_rgba(0,0,0,0.09)]"
         }
       `}
     >
-      {/* top accent line */}
-      <div className={`absolute top-0 left-0 right-0 h-[2px] ${cfg.bar} opacity-60`} />
-
-      <div className="p-5 pt-5">
+      <div className="p-5">
         {/* title row */}
         <div className="flex items-start justify-between gap-3 mb-2">
           <div className="flex items-start gap-2 flex-1 min-w-0">
@@ -145,10 +142,8 @@ function HighlightCard({ item, index }: { item: DigestItem; index: number }) {
       href={item.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="group relative block rounded-2xl border bg-white p-5 sm:p-6 transition-all duration-200 border-[#E8E8E4] hover:border-[#D0D0CA] hover:shadow-md overflow-hidden"
+      className="group relative block rounded-2xl bg-[#FEFEFE] p-5 sm:p-6 transition-all duration-200 shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.09)]"
     >
-      <div className={`absolute top-0 left-0 right-0 h-[3px] ${cfg.bar} opacity-70`} />
-
       <div className="flex items-center gap-2 mb-3">
         <span className="text-[10px] font-mono text-[#C0BFB8]">No.{index + 1}</span>
         <RelevanceBadge relevance={item.relevance} />
@@ -191,7 +186,7 @@ function SectionBlock({
   }[cols];
 
   return (
-    <section id={id} className="scroll-mt-28 mb-12 sm:mb-14">
+    <section id={id} className="scroll-mt-28 mb-8">
       <button onClick={() => setOpen(!open)} className="w-full text-left group">
         <SectionHeader id={id} icon={icon} title={title} count={items.length} />
       </button>
@@ -240,7 +235,7 @@ function PMFocusSection({ digest }: { digest: DailyDigest }) {
           const items = grouped[key];
           if (!items.length) return null;
           return (
-            <div key={key} className="bg-white rounded-2xl border border-[#E8E8E4] p-5">
+            <div key={key} className="bg-[#FEFEFE] rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
               <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#EFEFEC]">
                 <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
                 <span className="text-[13px] font-semibold text-[#1A1A18]">{cfg.label}</span>
@@ -281,7 +276,7 @@ function MobileTabNav({ activeSection, counts }: { activeSection: string; counts
   return (
     <div
       className="lg:hidden sticky top-14 z-40 overflow-x-auto scrollbar-hide border-b"
-      style={{ background: "rgba(250,250,248,0.96)", backdropFilter: "blur(12px)", borderColor: "#EFEFEC" }}
+      style={{ background: "rgba(244,243,239,0.96)", backdropFilter: "blur(12px)", borderColor: "#E2E1DC" }}
     >
       <div className="flex items-center gap-1 px-4 py-2.5 min-w-max">
         {SECTIONS.map(({ id, label }) => {
@@ -319,7 +314,7 @@ function DesktopSidebar({
   searchQuery: string; onSearch: (q: string) => void;
 }) {
   return (
-    <aside className="hidden lg:flex w-44 shrink-0 sticky top-14 self-start h-[calc(100vh-3.5rem)] flex-col pt-8 pr-6">
+    <aside className="hidden lg:flex w-48 shrink-0 sticky top-14 self-start h-[calc(100vh-3.5rem)] flex-col pt-8 pl-2 pr-4">
       {/* Search */}
       <div className="relative mb-6">
         <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9A9A94]" width="12" height="12" viewBox="0 0 16 16" fill="none">
@@ -466,7 +461,7 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
       {/* ── Header ── */}
       <header
         className="sticky top-0 z-50 border-b"
-        style={{ background: "rgba(250,250,248,0.92)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", borderColor: "#EFEFEC" }}
+        style={{ background: "rgba(244,243,239,0.92)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", borderColor: "#E2E1DC" }}
       >
         <div className="max-w-[1200px] mx-auto px-5 sm:px-8 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -499,7 +494,7 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
           onSearch={(q) => { setSearchQuery(q); setFocusedIdx(-1); }}
         />
 
-        <main className="flex-1 min-w-0 py-8 sm:py-12">
+        <main className="flex-1 min-w-0 py-6 sm:py-8">
 
           {/* 手机端搜索 */}
           <div className="relative mb-6 lg:hidden">
@@ -517,7 +512,7 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
           </div>
 
           {/* Hero */}
-          <div className="mb-10">
+          <div className="mb-6">
             <div className="flex items-baseline gap-3 mb-1">
               <h1 className="text-[22px] sm:text-[26px] font-bold text-[#1A1A18] tracking-tight">每日 AI 前沿速览</h1>
             </div>
@@ -526,7 +521,7 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
 
           {/* Editor Note */}
           {digest.editorNote && (
-            <div className="mb-10 rounded-2xl border border-[#E8E8E4] bg-white p-5 sm:p-6">
+            <div className="mb-7 rounded-2xl bg-[#F7F6F3] p-5 sm:p-6">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-5 h-5 rounded-lg bg-amber-400 flex items-center justify-center">
                   <span className="text-[9px] font-bold text-white">✦</span>
@@ -565,7 +560,7 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
             <>
               {/* 今日必读 */}
               {digest.highlights.length > 0 && (
-                <section id="highlights" className="mb-12 scroll-mt-28">
+                <section id="highlights" className="mb-8 scroll-mt-28">
                   <SectionHeader id="highlights" icon="✦" title="今日必读" count={digest.highlights.length} />
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {digest.highlights.map((item, i) => <HighlightCard key={item.id} item={item} index={i} />)}
@@ -573,17 +568,10 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
                 </section>
               )}
 
-              {/* 双列区 */}
-              <div className="grid gap-x-8 lg:grid-cols-2">
-                <div>
-                  <SectionBlock id="github"  title="开源热项" icon="◎" items={digest.github} />
-                  <SectionBlock id="thought" title="大佬说"   icon="◆" items={digest.thoughtLeaders} />
-                </div>
-                <div>
-                  <SectionBlock id="industry" title="行业动态" icon="○" items={digest.industry} />
-                  <SectionBlock id="chinese"  title="国内速递" icon="◉" items={digest.chinese} />
-                </div>
-              </div>
+              <SectionBlock id="github"   title="开源热项" icon="◎" items={digest.github} />
+              <SectionBlock id="thought"  title="大佬说"   icon="◆" items={digest.thoughtLeaders} />
+              <SectionBlock id="industry" title="行业动态" icon="○" items={digest.industry} />
+              <SectionBlock id="chinese"  title="国内速递" icon="◉" items={digest.chinese} />
 
               {/* 研究（默认折叠） */}
               <SectionBlock id="research" title="前沿研究" icon="◇" items={digest.research} defaultExpanded={false} />
