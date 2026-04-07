@@ -40,10 +40,9 @@ jobs:
         run: |
           git config user.name "AI Frontier Bot"
           git config user.email "bot@ai-frontier.local"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           git add data/
           git diff --staged --quiet && echo "No changes to commit" || (git commit -m "data: daily digest $(date +'%Y-%m-%d')" && git push)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ── Job 2: 构建并部署到 GitHub Pages ──
   deploy:
