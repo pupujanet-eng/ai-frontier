@@ -9,28 +9,69 @@ import ReactMarkdown from "react-markdown";
 ───────────────────────────────────────── */
 
 const RELEVANCE = {
-  a2a:         { label: "A2A协作",   dot: "bg-violet-400", badge: "bg-violet-50 text-violet-600",   bar: "bg-violet-300" },
-  "agent-ads": { label: "Agent广告", dot: "bg-orange-400", badge: "bg-orange-50 text-orange-600",   bar: "bg-orange-300" },
-  geo:         { label: "GEO增强",   dot: "bg-cyan-400",   badge: "bg-cyan-50 text-cyan-700",       bar: "bg-cyan-300"   },
-  general:     { label: "前沿动态",  dot: "bg-stone-300",  badge: "bg-stone-100 text-stone-500",    bar: "bg-stone-200"  },
+  a2a:         { label: "A2A协作",   dot: "bg-violet-400", badge: "bg-violet-50 text-violet-600" },
+  "agent-ads": { label: "Agent广告", dot: "bg-orange-400", badge: "bg-orange-50 text-orange-600" },
+  geo:         { label: "GEO增强",   dot: "bg-cyan-400",   badge: "bg-cyan-50 text-cyan-700"     },
+  general:     { label: "前沿动态",  dot: "bg-stone-300",  badge: "bg-stone-100 text-stone-500"  },
+};
+
+const LABEL_TYPE_COLORS: Record<string, string> = {
+  "model-release":  "bg-purple-50 text-purple-600 border-purple-200",
+  "benchmark":      "bg-yellow-50 text-yellow-700 border-yellow-200",
+  "knowledge-base": "bg-teal-50 text-teal-700 border-teal-200",
+  "open-source":    "bg-blue-50 text-blue-600 border-blue-200",
+  "industry-news":  "bg-stone-50 text-stone-600 border-stone-200",
+  "research":       "bg-indigo-50 text-indigo-600 border-indigo-200",
+  "policy":         "bg-red-50 text-red-600 border-red-200",
+  "thought-leader": "bg-amber-50 text-amber-700 border-amber-200",
+  "general":        "bg-stone-50 text-stone-500 border-stone-200",
+};
+
+const LABEL_TYPE_NAMES: Record<string, string> = {
+  "model-release":  "新模型",
+  "benchmark":      "评测",
+  "knowledge-base": "知识库",
+  "open-source":    "开源",
+  "industry-news":  "行业",
+  "research":       "研究",
+  "policy":         "政策",
+  "thought-leader": "观点",
+  "general":        "动态",
 };
 
 const SECTIONS = [
-  { id: "highlights", label: "今日必读",  icon: "✦",  key: "1" },
-  { id: "github",     label: "开源热项",  icon: "◎",  key: "2" },
-  { id: "thought",    label: "大佬说",    icon: "◆",  key: "3" },
-  { id: "industry",   label: "行业动态",  icon: "○",  key: "4" },
-  { id: "research",   label: "前沿研究",  icon: "◇",  key: "5" },
-  { id: "chinese",    label: "国内速递",  icon: "◉",  key: "6" },
-  { id: "pm-focus",   label: "PM视角",    icon: "→",  key: "7" },
+  { id: "hot-ranking", label: "全球热榜",  icon: "▲",  key: "1" },
+  { id: "pm-focus",    label: "PM关联",    icon: "→",  key: "2" },
+  { id: "github",      label: "开源热项",  icon: "◎",  key: "3" },
+  { id: "thought",     label: "大佬说",    icon: "◆",  key: "4" },
+  { id: "industry",    label: "行业动态",  icon: "○",  key: "5" },
+  { id: "research",    label: "前沿研究",  icon: "◇",  key: "6" },
+  { id: "chinese",     label: "国内速递",  icon: "◉",  key: "7" },
 ];
 
 /* ─────────────────────────────────────────
    Small components
 ───────────────────────────────────────── */
 
+function ImportanceBar({ score }: { score: number }) {
+  const pct = Math.round((score / 10) * 100);
+  const color =
+    score >= 8 ? "bg-rose-400" :
+    score >= 6 ? "bg-amber-400" :
+    score >= 4 ? "bg-blue-300" : "bg-stone-200";
+  return (
+    <div className="flex items-center gap-1.5 shrink-0" title={`重要度 ${score}/10`}>
+      <div className="w-14 h-1 rounded-full bg-stone-100 overflow-hidden">
+        <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-[10px] font-mono text-[#9A9A94]">{score}</span>
+    </div>
+  );
+}
+
 function RelevanceBadge({ relevance }: { relevance: string }) {
-  const cfg = RELEVANCE[relevance as keyof typeof RELEVANCE] ?? RELEVANCE.general;
+  if (relevance === "general") return null;
+  const cfg = RELEVANCE[relevance as keyof typeof RELEVANCE];
   return (
     <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 ${cfg.badge}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
@@ -39,9 +80,20 @@ function RelevanceBadge({ relevance }: { relevance: string }) {
   );
 }
 
+function LabelTypeBadge({ labelType }: { labelType?: string }) {
+  if (!labelType || labelType === "general") return null;
+  const cls = LABEL_TYPE_COLORS[labelType] ?? LABEL_TYPE_COLORS.general;
+  const name = LABEL_TYPE_NAMES[labelType] ?? labelType;
+  return (
+    <span className={`inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full border shrink-0 ${cls}`}>
+      {name}
+    </span>
+  );
+}
+
 function SectionHeader({ id, icon, title, count }: { id: string; icon: string; title: string; count: number }) {
   return (
-    <div className="flex items-center gap-3 mb-6">
+    <div className="flex items-center gap-3 mb-5">
       <span className="text-[15px] leading-none text-[#9A9A94]">{icon}</span>
       <h2 className="text-[15px] font-semibold text-[#1A1A18] tracking-tight shrink-0">{title}</h2>
       <div className="flex-1 h-[1px] bg-[#EFEFEC]" />
@@ -51,16 +103,15 @@ function SectionHeader({ id, icon, title, count }: { id: string; icon: string; t
 }
 
 /* ─────────────────────────────────────────
-   ItemCard
+   ItemCard — full summary, no line-clamp
 ───────────────────────────────────────── */
 
 function ItemCard({
-  item, rank, focused = false, cardRef,
+  item, rank, focused = false, cardRef, showImportance = false,
 }: {
-  item: DigestItem; rank?: number; focused?: boolean; cardRef?: React.Ref<HTMLDivElement>;
+  item: DigestItem; rank?: number; focused?: boolean;
+  cardRef?: React.Ref<HTMLDivElement>; showImportance?: boolean;
 }) {
-  const cfg = RELEVANCE[item.relevance as keyof typeof RELEVANCE] ?? RELEVANCE.general;
-
   return (
     <div
       ref={cardRef}
@@ -75,7 +126,7 @@ function ItemCard({
     >
       <div className="p-5">
         {/* title row */}
-        <div className="flex items-start justify-between gap-3 mb-2">
+        <div className="flex items-start justify-between gap-3 mb-2.5">
           <div className="flex items-start gap-2 flex-1 min-w-0">
             {rank !== undefined && (
               <span className="text-[11px] font-mono text-[#C0BFB8] mt-0.5 shrink-0 w-5 pt-px">{String(rank + 1).padStart(2, "0")}</span>
@@ -84,21 +135,26 @@ function ItemCard({
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-[14px] leading-snug text-[#1A1A18] hover:text-blue-600 transition-colors line-clamp-2"
+              className="font-semibold text-[14px] leading-snug text-[#1A1A18] hover:text-blue-600 transition-colors"
             >
               {item.titleZh || item.title}
             </a>
           </div>
-          <RelevanceBadge relevance={item.relevance} />
+          <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+            <LabelTypeBadge labelType={item.labelType} />
+            <RelevanceBadge relevance={item.relevance} />
+          </div>
         </div>
 
-        {/* summary */}
-        <div className="text-[13px] text-[#6A6A66] leading-[1.75] mb-3 pl-7 prose-digest line-clamp-3">
-          <ReactMarkdown>{item.summaryZh || item.summary}</ReactMarkdown>
-        </div>
+        {/* summary — full display, no truncation */}
+        {item.summaryZh && (
+          <div className="text-[13px] text-[#6A6A66] leading-[1.8] mb-3 pl-7 prose-digest">
+            <ReactMarkdown>{item.summaryZh}</ReactMarkdown>
+          </div>
+        )}
 
-        {/* insight */}
-        {item.insight && (
+        {/* insight — only when relevant to PM projects */}
+        {item.insight && item.relevance !== "general" && (
           <div className="ml-7 border-l-[3px] border-emerald-300 bg-emerald-50 rounded-r-xl px-3.5 py-2.5 mb-3">
             <p className="text-[12px] text-emerald-700 leading-relaxed">{item.insight}</p>
           </div>
@@ -108,19 +164,93 @@ function ItemCard({
         <div className="flex items-center justify-between gap-2 pl-7">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[11px] text-[#9A9A94]">{item.source}</span>
-            {item.tags.slice(0, 2).map((tag) => (
+            {item.tags.slice(0, 3).map((tag) => (
               <span key={tag} className="text-[11px] text-[#9A9A94] bg-[#F5F5F2] border border-[#EFEFEC] px-2 py-0.5 rounded-full hidden sm:inline">
                 {tag}
               </span>
             ))}
           </div>
-          <a
-            href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[11px] text-[#9A9A94] hover:text-blue-500 transition-colors shrink-0 flex items-center gap-0.5"
-          >
-            阅读原文
+          <div className="flex items-center gap-3">
+            {showImportance && <ImportanceBar score={item.importance ?? 5} />}
+            <a
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] text-[#9A9A94] hover:text-blue-500 transition-colors shrink-0 flex items-center gap-0.5"
+            >
+              原文
+              <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+                <path d="M2 8L8 2M8 2H4M8 2V6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────
+   HotRankingCard — numbered, importance bar
+───────────────────────────────────────── */
+
+function HotRankingCard({ item, index }: { item: DigestItem; index: number }) {
+  const isTop3 = index < 3;
+  return (
+    <div className={`group relative rounded-2xl bg-[#FEFEFE] transition-all duration-200
+      shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.09)]
+      ${isTop3 ? "border border-[#EFEFEC]" : ""}
+    `}>
+      <div className="p-5">
+        {/* rank + meta row */}
+        <div className="flex items-center gap-2.5 mb-2.5">
+          <span className={`text-[18px] font-bold font-mono shrink-0 leading-none
+            ${index === 0 ? "text-amber-500" : index === 1 ? "text-stone-400" : index === 2 ? "text-orange-400" : "text-[#DEDDD6]"}
+          `}>
+            {String(index + 1).padStart(2, "0")}
+          </span>
+          <div className="flex items-center gap-1.5 flex-wrap flex-1">
+            <LabelTypeBadge labelType={item.labelType} />
+            <RelevanceBadge relevance={item.relevance} />
+          </div>
+          <ImportanceBar score={item.importance ?? 5} />
+        </div>
+
+        {/* title */}
+        <a
+          href={item.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block font-semibold text-[14px] leading-snug text-[#1A1A18] hover:text-blue-600 transition-colors mb-2.5"
+        >
+          {item.titleZh || item.title}
+        </a>
+
+        {/* full summary */}
+        {item.summaryZh && (
+          <div className="text-[13px] text-[#6A6A66] leading-[1.8] mb-3 prose-digest">
+            <ReactMarkdown>{item.summaryZh}</ReactMarkdown>
+          </div>
+        )}
+
+        {/* insight if pm-relevant */}
+        {item.insight && item.relevance !== "general" && (
+          <div className="border-l-[3px] border-emerald-300 bg-emerald-50 rounded-r-xl px-3.5 py-2.5 mb-3">
+            <p className="text-[12px] text-emerald-700 leading-relaxed">{item.insight}</p>
+          </div>
+        )}
+
+        {/* source + tags */}
+        <div className="flex items-center gap-2 flex-wrap mt-1">
+          <span className="text-[11px] text-[#9A9A94]">{item.source}</span>
+          {item.tags.slice(0, 3).map((tag) => (
+            <span key={tag} className="text-[11px] text-[#9A9A94] bg-[#F5F5F2] border border-[#EFEFEC] px-2 py-0.5 rounded-full hidden sm:inline">
+              {tag}
+            </span>
+          ))}
+          <a href={item.url} target="_blank" rel="noopener noreferrer"
+            className="ml-auto text-[11px] text-[#9A9A94] hover:text-blue-500 transition-colors flex items-center gap-0.5">
+            原文
             <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
               <path d="M2 8L8 2M8 2H4M8 2V6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -132,38 +262,119 @@ function ItemCard({
 }
 
 /* ─────────────────────────────────────────
-   HighlightCard（今日必读大卡）
+   PMFocusSection — relevance grouped, below hot ranking
 ───────────────────────────────────────── */
 
-function HighlightCard({ item, index }: { item: DigestItem; index: number }) {
-  const cfg = RELEVANCE[item.relevance as keyof typeof RELEVANCE] ?? RELEVANCE.general;
+function PMFocusSection({ items }: { items: DigestItem[] }) {
+  if (items.length === 0) return null;
+
+  const grouped = {
+    a2a:         items.filter((i) => i.relevance === "a2a"),
+    "agent-ads": items.filter((i) => i.relevance === "agent-ads"),
+    geo:         items.filter((i) => i.relevance === "geo"),
+  };
+
+  const hasAny = Object.values(grouped).some((g) => g.length > 0);
+  if (!hasAny) return null;
+
   return (
-    <a
-      href={item.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group relative block rounded-2xl bg-[#FEFEFE] p-5 sm:p-6 transition-all duration-200 shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.09)]"
-    >
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-[10px] font-mono text-[#C0BFB8]">No.{index + 1}</span>
-        <RelevanceBadge relevance={item.relevance} />
-        <span className="text-[11px] text-[#9A9A94] hidden sm:inline ml-auto">{item.source}</span>
+    <section id="pm-focus" className="scroll-mt-28 mb-10">
+      <div className="flex items-center gap-3 mb-5">
+        <span className="text-[15px] leading-none text-[#9A9A94]">→</span>
+        <h2 className="text-[15px] font-semibold text-[#1A1A18] tracking-tight shrink-0">PM 关联</h2>
+        <div className="flex-1 h-[1px] bg-[#EFEFEC]" />
+        <span className="text-[11px] text-[#9A9A94] shrink-0 bg-[#F5F5F2] border border-[#EFEFEC] px-2 py-0.5 rounded-full">
+          来自今日热榜
+        </span>
       </div>
 
-      <h3 className="font-semibold text-[15px] text-[#1A1A18] group-hover:text-blue-600 leading-snug mb-2.5 transition-colors">
-        {item.titleZh || item.title}
-      </h3>
-
-      <div className="text-[13px] text-[#6A6A66] leading-[1.75] mb-3 line-clamp-2 prose-digest">
-        <ReactMarkdown>{item.summaryZh || item.summary}</ReactMarkdown>
+      <div className="grid gap-4 sm:grid-cols-3">
+        {(["a2a", "agent-ads", "geo"] as const).map((key) => {
+          const cfg = RELEVANCE[key];
+          const keyItems = grouped[key];
+          if (!keyItems.length) return null;
+          return (
+            <div key={key} className="bg-[#FEFEFE] rounded-2xl p-4 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+              <div className="flex items-center gap-2 mb-3 pb-2.5 border-b border-[#EFEFEC]">
+                <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
+                <span className="text-[13px] font-semibold text-[#1A1A18]">{cfg.label}</span>
+                <span className="text-[11px] text-[#9A9A94] ml-auto">{keyItems.length}</span>
+              </div>
+              <div className="flex flex-col gap-3">
+                {keyItems.map((item) => (
+                  <div key={item.id}>
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block text-[13px] font-medium text-[#1A1A18] hover:text-blue-600 leading-snug mb-1 transition-colors"
+                    >
+                      {item.titleZh || item.title}
+                    </a>
+                    {item.insight && (
+                      <p className="text-[12px] text-emerald-600 leading-relaxed">{item.insight}</p>
+                    )}
+                    <p className="text-[11px] text-[#9A9A94] mt-1">{item.source}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
+    </section>
+  );
+}
 
-      {item.insight && (
-        <div className="border-l-[3px] border-emerald-300 bg-emerald-50 rounded-r-xl px-3.5 py-2.5">
-          <p className="text-[12px] text-emerald-700 leading-relaxed line-clamp-2">{item.insight}</p>
+/* ─────────────────────────────────────────
+   GitHub Section — new vs persistent hot
+───────────────────────────────────────── */
+
+function GitHubSection({ newItems, hotItems }: { newItems: DigestItem[]; hotItems: DigestItem[] }) {
+  const [tab, setTab] = useState<"new" | "hot">(newItems.length > 0 ? "new" : "hot");
+  if (newItems.length === 0 && hotItems.length === 0) return null;
+
+  const displayed = tab === "new" ? newItems : hotItems;
+
+  return (
+    <section id="github" className="scroll-mt-28 mb-8">
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-[15px] leading-none text-[#9A9A94]">◎</span>
+        <h2 className="text-[15px] font-semibold text-[#1A1A18] tracking-tight shrink-0">开源热项</h2>
+        <div className="flex-1 h-[1px] bg-[#EFEFEC]" />
+        {/* Tab toggle */}
+        <div className="flex items-center gap-1 bg-[#F5F5F2] rounded-xl p-0.5">
+          {newItems.length > 0 && (
+            <button
+              onClick={() => setTab("new")}
+              className={`text-[11px] font-medium px-3 py-1 rounded-lg transition-all ${
+                tab === "new" ? "bg-white shadow-sm text-[#1A1A18]" : "text-[#9A9A94]"
+              }`}
+            >
+              新上榜 {newItems.length}
+            </button>
+          )}
+          {hotItems.length > 0 && (
+            <button
+              onClick={() => setTab("hot")}
+              className={`text-[11px] font-medium px-3 py-1 rounded-lg transition-all ${
+                tab === "hot" ? "bg-white shadow-sm text-[#1A1A18]" : "text-[#9A9A94]"
+              }`}
+            >
+              持续热门 {hotItems.length}
+            </button>
+          )}
         </div>
+      </div>
+
+      {tab === "hot" && hotItems.length > 0 && (
+        <p className="text-[12px] text-[#9A9A94] mb-4 ml-0.5">这些项目过去7天持续在trending，仍值得关注但不代表今日新动向。</p>
       )}
-    </a>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {displayed.map((item, i) => <ItemCard key={item.id} item={item} rank={i} />)}
+      </div>
+    </section>
   );
 }
 
@@ -175,15 +386,11 @@ function SectionBlock({
   id, title, icon, items, defaultExpanded = true, cols = 2,
 }: {
   id: string; title: string; icon: string;
-  items: DigestItem[]; defaultExpanded?: boolean; cols?: 1 | 2 | 3;
+  items: DigestItem[]; defaultExpanded?: boolean; cols?: 1 | 2;
 }) {
   const [open, setOpen] = useState(defaultExpanded);
   if (items.length === 0) return null;
-  const gridClass = {
-    1: "grid gap-4",
-    2: "grid gap-4 md:grid-cols-2",
-    3: "grid gap-4 md:grid-cols-2 lg:grid-cols-3",
-  }[cols];
+  const gridClass = cols === 2 ? "grid gap-4 md:grid-cols-2" : "grid gap-4";
 
   return (
     <section id={id} className="scroll-mt-28 mb-8">
@@ -191,79 +398,6 @@ function SectionBlock({
         <SectionHeader id={id} icon={icon} title={title} count={items.length} />
       </button>
       {open && <div className={gridClass}>{items.map((item, i) => <ItemCard key={item.id} item={item} rank={i} />)}</div>}
-    </section>
-  );
-}
-
-/* ─────────────────────────────────────────
-   PMFocusSection
-───────────────────────────────────────── */
-
-function PMFocusSection({ digest }: { digest: DailyDigest }) {
-  const all = [
-    ...digest.highlights, ...digest.github, ...digest.research,
-    ...digest.industry, ...digest.thoughtLeaders, ...digest.chinese,
-  ];
-  const pmItems = all.filter((i) => i.relevance !== "general");
-  if (pmItems.length === 0) return null;
-
-  const grouped = {
-    a2a:         pmItems.filter((i) => i.relevance === "a2a"),
-    "agent-ads": pmItems.filter((i) => i.relevance === "agent-ads"),
-    geo:         pmItems.filter((i) => i.relevance === "geo"),
-  };
-
-  return (
-    <section id="pm-focus" className="scroll-mt-28 mb-12">
-      {/* 分割 */}
-      <div className="flex items-center gap-4 mb-8">
-        <div className="flex-1 h-[1px] bg-[#EFEFEC]" />
-        <div className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#E8E8E4] bg-white text-[#5A5A56]">
-          <span className="text-[12px]">→</span>
-          <span className="text-[12px] font-medium">PM 视角精选</span>
-        </div>
-        <div className="flex-1 h-[1px] bg-[#EFEFEC]" />
-      </div>
-
-      <p className="text-[12px] text-[#9A9A94] mb-6 text-center">
-        从今日资讯中筛选，按三个核心项目方向归类
-      </p>
-
-      <div className="grid gap-5 sm:grid-cols-3">
-        {(["a2a", "agent-ads", "geo"] as const).map((key) => {
-          const cfg = RELEVANCE[key];
-          const items = grouped[key];
-          if (!items.length) return null;
-          return (
-            <div key={key} className="bg-[#FEFEFE] rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
-              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#EFEFEC]">
-                <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
-                <span className="text-[13px] font-semibold text-[#1A1A18]">{cfg.label}</span>
-                <span className="text-[11px] text-[#9A9A94] ml-auto">{items.length} 条</span>
-              </div>
-              <div className="flex flex-col gap-3">
-                {items.map((item) => (
-                  <a
-                    key={item.id}
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group block"
-                  >
-                    <p className="text-[13px] text-[#1A1A18] group-hover:text-blue-600 leading-snug mb-1 transition-colors line-clamp-2 font-medium">
-                      {item.titleZh || item.title}
-                    </p>
-                    {item.insight && (
-                      <p className="text-[12px] text-emerald-600 leading-relaxed line-clamp-2">{item.insight}</p>
-                    )}
-                    <p className="text-[11px] text-[#9A9A94] mt-1">{item.source}</p>
-                  </a>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
     </section>
   );
 }
@@ -288,9 +422,7 @@ function MobileTabNav({ activeSection, counts }: { activeSection: string; counts
               key={id}
               onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" })}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all duration-150 shrink-0 ${
-                active
-                  ? "bg-[#1A1A18] text-white"
-                  : "text-[#5A5A56] hover:bg-[#F0EFE8]"
+                active ? "bg-[#1A1A18] text-white" : "text-[#5A5A56] hover:bg-[#F0EFE8]"
               }`}
             >
               {label}
@@ -315,7 +447,6 @@ function DesktopSidebar({
 }) {
   return (
     <aside className="hidden lg:flex w-48 shrink-0 sticky top-14 self-start h-[calc(100vh-3.5rem)] flex-col pt-8 pl-2 pr-4">
-      {/* Search */}
       <div className="relative mb-6">
         <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9A9A94]" width="12" height="12" viewBox="0 0 16 16" fill="none">
           <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.5"/>
@@ -331,7 +462,6 @@ function DesktopSidebar({
         />
       </div>
 
-      {/* Nav */}
       <nav className="flex flex-col gap-0.5 flex-1 overflow-y-auto">
         {SECTIONS.map(({ id, label, icon, key }) => {
           const count = counts[id] ?? 0;
@@ -342,9 +472,7 @@ function DesktopSidebar({
               key={id}
               onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" })}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all duration-150 text-left group ${
-                active
-                  ? "bg-[#1A1A18] text-white"
-                  : "text-[#5A5A56] hover:bg-[#F0EFE8] hover:text-[#1A1A18]"
+                active ? "bg-[#1A1A18] text-white" : "text-[#5A5A56] hover:bg-[#F0EFE8] hover:text-[#1A1A18]"
               }`}
             >
               <div className="flex items-center gap-2">
@@ -360,7 +488,6 @@ function DesktopSidebar({
         })}
       </nav>
 
-      {/* Keyboard hints */}
       <div className="mt-4 pt-4 border-t border-[#EFEFEC] pb-6">
         <p className="text-[10px] text-[#9A9A94] mb-2 font-medium uppercase tracking-wider">快捷键</p>
         {[["j/k","上下翻"],["1–7","跳转"],["/ ","搜索"],["Esc","清除"]].map(([k, d]) => (
@@ -379,14 +506,23 @@ function DesktopSidebar({
 ───────────────────────────────────────── */
 
 export function DigestView({ digest }: { digest: DailyDigest }) {
-  const [activeSection, setActiveSection] = useState("highlights");
+  const [activeSection, setActiveSection] = useState("hot-ranking");
   const [searchQuery, setSearchQuery]     = useState("");
   const [focusedIdx, setFocusedIdx]       = useState(-1);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
+  // Support both new schema and legacy schema
+  const hotRanking   = digest.hotRanking   ?? digest.highlights ?? [];
+  const pmHighlights = digest.pmHighlights ?? hotRanking.filter((i) => i.relevance !== "general");
+  const githubNew    = digest.githubNew    ?? [];
+  const githubHot    = digest.githubHot    ?? digest.github ?? [];
+
   const allItems: DigestItem[] = [
-    ...digest.highlights, ...digest.github, ...digest.thoughtLeaders,
-    ...digest.industry, ...digest.research, ...digest.chinese,
+    ...hotRanking,
+    ...(digest.thoughtLeaders ?? []),
+    ...(digest.industry ?? []),
+    ...(digest.research ?? []),
+    ...(digest.chinese ?? []),
   ];
 
   const filteredItems = searchQuery.trim()
@@ -396,23 +532,24 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
           item.titleZh?.toLowerCase().includes(q) ||
           item.title?.toLowerCase().includes(q) ||
           item.summaryZh?.toLowerCase().includes(q) ||
-          item.tags.some((t) => t.toLowerCase().includes(q)) ||
+          item.tags?.some((t) => t.toLowerCase().includes(q)) ||
           item.source?.toLowerCase().includes(q)
         );
       })
     : null;
 
+  const githubCount = githubNew.length + githubHot.length;
+
   const counts: Record<string, number> = {
-    highlights: digest.highlights.length,
-    github:     digest.github.length,
-    thought:    digest.thoughtLeaders.length,
-    industry:   digest.industry.length,
-    research:   digest.research.length,
-    chinese:    digest.chinese.length,
-    "pm-focus": allItems.filter((i) => i.relevance !== "general").length,
+    "hot-ranking": hotRanking.length,
+    "pm-focus":    pmHighlights.length,
+    github:        githubCount,
+    thought:       (digest.thoughtLeaders ?? []).length,
+    industry:      (digest.industry ?? []).length,
+    research:      (digest.research ?? []).length,
+    chinese:       (digest.chinese ?? []).length,
   };
 
-  /* Intersection observer */
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -429,7 +566,6 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
     return () => observer.disconnect();
   }, []);
 
-  /* Keyboard */
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     const tag = (e.target as HTMLElement).tagName;
     const isInput = tag === "INPUT" || tag === "TEXTAREA";
@@ -458,7 +594,7 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
   return (
     <div className="min-h-screen" style={{ background: "var(--bg-page)" }}>
 
-      {/* ── Header ── */}
+      {/* Header */}
       <header
         className="sticky top-0 z-50 border-b"
         style={{ background: "rgba(244,243,239,0.92)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", borderColor: "#E2E1DC" }}
@@ -481,10 +617,8 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
         </div>
       </header>
 
-      {/* ── 手机端 Tab 导航 ── */}
       <MobileTabNav activeSection={activeSection} counts={counts} />
 
-      {/* ── Body ── */}
       <div className="max-w-[1200px] mx-auto px-5 sm:px-8 flex gap-10">
 
         <DesktopSidebar
@@ -496,7 +630,7 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
 
         <main className="flex-1 min-w-0 py-6 sm:py-8">
 
-          {/* 手机端搜索 */}
+          {/* Mobile search */}
           <div className="relative mb-6 lg:hidden">
             <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9A9A94]" width="13" height="13" viewBox="0 0 16 16" fill="none">
               <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.5"/>
@@ -513,9 +647,7 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
 
           {/* Hero */}
           <div className="mb-6">
-            <div className="flex items-baseline gap-3 mb-1">
-              <h1 className="text-[22px] sm:text-[26px] font-bold text-[#1A1A18] tracking-tight">每日 AI 前沿速览</h1>
-            </div>
+            <h1 className="text-[22px] sm:text-[26px] font-bold text-[#1A1A18] tracking-tight mb-1">每日 AI 前沿速览</h1>
             <p className="text-[13px] text-[#9A9A94]">{digest.dateZh} · 共 {allItems.length} 条</p>
           </div>
 
@@ -535,7 +667,7 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
             </div>
           )}
 
-          {/* ── 搜索结果 ── */}
+          {/* Search results */}
           {searchQuery && (
             <div className="mb-10">
               <div className="flex items-center gap-2 mb-5">
@@ -555,43 +687,55 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
             </div>
           )}
 
-          {/* ── 正常内容 ── */}
+          {/* Main content */}
           {!searchQuery && (
             <>
-              {/* 今日必读 */}
-              {digest.highlights.length > 0 && (
-                <section id="highlights" className="mb-8 scroll-mt-28">
-                  <SectionHeader id="highlights" icon="✦" title="今日必读" count={digest.highlights.length} />
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {digest.highlights.map((item, i) => <HighlightCard key={item.id} item={item} index={i} />)}
+              {/* ── 全球热榜 ── */}
+              {hotRanking.length > 0 && (
+                <section id="hot-ranking" className="scroll-mt-28 mb-8">
+                  <div className="flex items-center gap-3 mb-5">
+                    <span className="text-[15px] leading-none text-[#9A9A94]">▲</span>
+                    <h2 className="text-[15px] font-semibold text-[#1A1A18] tracking-tight shrink-0">全球热榜</h2>
+                    <div className="flex-1 h-[1px] bg-[#EFEFEC]" />
+                    <span className="text-[11px] text-[#9A9A94] shrink-0 bg-[#F5F5F2] border border-[#EFEFEC] px-2 py-0.5 rounded-full">
+                      按影响力排序
+                    </span>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {hotRanking.map((item, i) => (
+                      <HotRankingCard key={item.id} item={item} index={i} />
+                    ))}
                   </div>
                 </section>
               )}
 
-              <SectionBlock id="github"   title="开源热项" icon="◎" items={digest.github} />
-              <SectionBlock id="thought"  title="大佬说"   icon="◆" items={digest.thoughtLeaders} />
-              <SectionBlock id="industry" title="行业动态" icon="○" items={digest.industry} />
-              <SectionBlock id="chinese"  title="国内速递" icon="◉" items={digest.chinese} />
+              {/* ── PM 关联 ── */}
+              <PMFocusSection items={pmHighlights} />
 
-              {/* 研究（默认折叠） */}
-              <SectionBlock id="research" title="前沿研究" icon="◇" items={digest.research} defaultExpanded={false} />
+              {/* ── GitHub 开源 ── */}
+              <GitHubSection newItems={githubNew} hotItems={githubHot} />
 
-              {/* PM 专栏 */}
-              <div className="mt-4">
-                <PMFocusSection digest={digest} />
-              </div>
+              {/* ── 大佬说 ── */}
+              <SectionBlock id="thought"  title="大佬说"   icon="◆" items={digest.thoughtLeaders ?? []} />
+
+              {/* ── 行业动态 ── */}
+              <SectionBlock id="industry" title="行业动态" icon="○" items={digest.industry ?? []} />
+
+              {/* ── 国内速递 ── */}
+              <SectionBlock id="chinese"  title="国内速递" icon="◉" items={digest.chinese ?? []} />
+
+              {/* ── 前沿研究（默认折叠）── */}
+              <SectionBlock id="research" title="前沿研究" icon="◇" items={digest.research ?? []} defaultExpanded={false} />
             </>
           )}
 
-          {/* Footer */}
           <footer className="mt-16 pt-6 border-t border-[#EFEFEC]">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <span className="text-[12px] text-[#9A9A94]">pupu的AI日报 · Claude API 每日自动生成</span>
-              <div className="flex items-center gap-3">
-                {(["a2a","agent-ads","geo"] as const).map((k) => (
-                  <span key={k} className="flex items-center gap-1 text-[11px] text-[#9A9A94]">
-                    <span className={`w-1.5 h-1.5 rounded-full ${RELEVANCE[k].dot}`} />
-                    {RELEVANCE[k].label}
+              <div className="flex items-center gap-3 flex-wrap">
+                {(["model-release","benchmark","knowledge-base","thought-leader"] as const).map((k) => (
+                  <span key={k} className={`inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full border ${LABEL_TYPE_COLORS[k]}`}>
+                    {LABEL_TYPE_NAMES[k]}
                   </span>
                 ))}
               </div>

@@ -4,23 +4,36 @@ export interface DigestItem {
   titleZh: string;
   summary: string;
   summaryZh: string;
-  insight: string; // AI-generated insight for PM perspective
+  insight: string;
   url: string;
   source: string;
-  category: "github" | "research" | "industry" | "thought-leader" | "chinese";
+  category: "github" | "github-new" | "github-hot" | "research" | "industry" | "thought-leader" | "chinese";
   tags: string[];
-  relevance: "a2a" | "agent-ads" | "geo" | "general"; // your 3 core projects
+  // objective importance score 1-10, used for global hot ranking
+  importance: number;
+  // optional project relevance (may be absent / general)
+  relevance: "a2a" | "agent-ads" | "geo" | "general";
+  // tag types for richer labeling
+  labelType?: "model-release" | "benchmark" | "knowledge-base" | "open-source" | "industry-news" | "research" | "policy" | "thought-leader" | "general";
   date: string;
 }
 
 export interface DailyDigest {
-  date: string; // YYYY-MM-DD
-  dateZh: string; // 中文日期
-  highlights: DigestItem[]; // top 3-5 must-reads
-  github: DigestItem[];
+  date: string;
+  dateZh: string;
+  // global top 10 by importance, regardless of project relevance
+  hotRanking: DigestItem[];
+  // subset of hotRanking items that relate to user's 3 projects
+  pmHighlights: DigestItem[];
+  // github split into new entries vs persistent hot
+  githubNew: DigestItem[];
+  githubHot: DigestItem[];
   research: DigestItem[];
   industry: DigestItem[];
   thoughtLeaders: DigestItem[];
   chinese: DigestItem[];
-  editorNote: string; // Claude's daily synthesis note
+  editorNote: string;
+  // legacy, kept for compatibility during transition
+  highlights: DigestItem[];
+  github: DigestItem[];
 }
