@@ -2,7 +2,7 @@
 
 import { DailyDigest, DigestItem } from "@/types";
 import { useState, useEffect, useRef, useCallback } from "react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { Components } from "react-markdown";
 
 /* ─────────────────────────────────────────
    Constants
@@ -101,6 +101,22 @@ function SectionHeader({ id, icon, title, count }: { id: string; icon: string; t
     </div>
   );
 }
+
+const mdComponents: Components = {
+  a: ({ href, children }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-blue-500 hover:text-blue-700 underline underline-offset-2 transition-colors"
+    >
+      {children}
+    </a>
+  ),
+  strong: ({ children }) => (
+    <strong className="font-semibold text-[#1A1A18]">{children}</strong>
+  ),
+};
 
 function highlightNumbers(text: string) {
   const parts = text.split(/(\d+[\d,.%x倍+\-]*(?:\s*[倍%万亿k星])?)/g);
@@ -590,7 +606,7 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
         className="sticky top-0 z-50 border-b"
         style={{ background: "rgba(244,243,239,0.92)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", borderColor: "#E2E1DC" }}
       >
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-8 h-14 flex items-center gap-4">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-8 h-14 flex items-center justify-between gap-4">
           {/* Logo */}
           <div className="flex items-center gap-2.5 shrink-0">
             <div className="w-7 h-7 rounded-xl bg-[#1A1A18] flex items-center justify-center">
@@ -599,22 +615,25 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
             <span className="font-semibold text-[15px] text-[#1A1A18] tracking-tight hidden sm:block">pupu的AI日报</span>
           </div>
 
-          {/* Search — center, desktop only */}
-          <div className="relative flex-1 max-w-xs hidden lg:block">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9A9A94]" width="12" height="12" viewBox="0 0 16 16" fill="none">
+          {/* Search — desktop only, fixed width centered */}
+          <div className="relative w-72 hidden lg:block">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B0B0A8] pointer-events-none" width="12" height="12" viewBox="0 0 16 16" fill="none">
               <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.5"/>
               <path d="M10.5 10.5L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
             <input
               id="search-input"
               type="text"
-              placeholder="搜索资讯、来源、标签..."
+              placeholder="搜索标题、来源、标签..."
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setFocusedIdx(-1); }}
-              className="w-full bg-white border border-[#E8E8E4] rounded-xl pl-8 pr-3 py-1.5 text-[12px] text-[#1A1A18] placeholder-[#C0BFB8] outline-none focus:border-[#C8C8C2] focus:ring-2 focus:ring-blue-50 transition-all"
+              className="w-full bg-white border border-[#E8E8E4] rounded-xl pl-8 pr-8 py-1.5 text-[12.5px] text-[#1A1A18] placeholder-[#C0BFB8] outline-none focus:border-blue-200 focus:ring-2 focus:ring-blue-50 transition-all"
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9A9A94] hover:text-[#1A1A18] transition-colors">
+              <button
+                onClick={() => { setSearchQuery(""); setFocusedIdx(-1); }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9A9A94] hover:text-[#1A1A18] transition-colors"
+              >
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                   <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                 </svg>
@@ -623,11 +642,11 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
           </div>
 
           {/* Right meta */}
-          <div className="ml-auto flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
             <span className="text-[12px] text-[#9A9A94] hidden sm:block">{digest.dateZh}</span>
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[11px] text-[#9A9A94]">今日已更新</span>
+              <span className="text-[11px] text-[#9A9A94] hidden sm:block">今日已更新</span>
             </div>
           </div>
         </div>
@@ -683,8 +702,8 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
                 <span className="text-[13px] font-semibold text-[#1A1A18]">今日洞见</span>
                 <span className="text-[11px] text-[#9A9A94] ml-1">· by Claude</span>
               </div>
-              <div className="text-[14px] text-[#5A5A56] leading-[1.85] prose-digest">
-                <ReactMarkdown>{digest.editorNote}</ReactMarkdown>
+              <div className="text-[14px] text-[#5A5A56] leading-[1.85]">
+                <ReactMarkdown components={mdComponents}>{digest.editorNote}</ReactMarkdown>
               </div>
             </div>
           )}
