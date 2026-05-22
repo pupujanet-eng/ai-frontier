@@ -194,11 +194,24 @@ async function main() {
     console.warn("[digest] Feeds failed:", err);
   }
 
-  // 3. Classify feeds
+  // 3. Classify feeds — cap per-category so chinese isn't crowded out
   console.log("[digest] Processing feeds with Claude...");
+  const CAP: Record<string, number> = {
+    "thought-leader": 15,
+    "industry": 15,
+    "research": 10,
+    "chinese": 12,
+  };
+  const categoryCounts: Record<string, number> = {};
   const feedInputs = feedItems
     .filter((f) => f.title && f.link)
-    .slice(0, 50)
+    .filter((f) => {
+      const cap = CAP[f.category] ?? 10;
+      const n = categoryCounts[f.category] ?? 0;
+      if (n >= cap) return false;
+      categoryCounts[f.category] = n + 1;
+      return true;
+    })
     .map((f) => ({
       title: f.title,
       content: f.contentSnippet,
@@ -207,6 +220,7 @@ async function main() {
       category: f.category,
     }));
 
+  console.log(`[digest] Feed inputs by category:`, categoryCounts);
   const feedDigestItems = await classifyAndTranslate(feedInputs);
 
   // 4. Build hot ranking: top 10 by importance, from all items

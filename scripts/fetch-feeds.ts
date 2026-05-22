@@ -126,6 +126,26 @@ const FEEDS = [
     source: "量子位",
     category: "chinese",
   },
+  {
+    url: "https://36kr.com/feed",
+    source: "36氪",
+    category: "chinese",
+  },
+  {
+    url: "https://mp.weixin.qq.com/rss?__biz=MzA3MzI4MjgwMg==",
+    source: "机器之心WeChat",
+    category: "chinese",
+  },
+  {
+    url: "https://www.leiphone.com/feed",
+    source: "雷锋网",
+    category: "chinese",
+  },
+  {
+    url: "https://www.woshipm.com/feed",
+    source: "人人都是产品经理",
+    category: "chinese",
+  },
 ];
 
 export async function fetchAllFeeds(): Promise<FeedItem[]> {
