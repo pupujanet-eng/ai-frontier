@@ -117,11 +117,6 @@ const FEEDS = [
 
   // ── Chinese ──
   {
-    url: "https://www.jiqizhixin.com/rss",
-    source: "机器之心",
-    category: "chinese",
-  },
-  {
     url: "https://www.qbitai.com/feed",
     source: "量子位",
     category: "chinese",
@@ -132,11 +127,6 @@ const FEEDS = [
     category: "chinese",
   },
   {
-    url: "https://mp.weixin.qq.com/rss?__biz=MzA3MzI4MjgwMg==",
-    source: "机器之心WeChat",
-    category: "chinese",
-  },
-  {
     url: "https://www.leiphone.com/feed",
     source: "雷锋网",
     category: "chinese",
@@ -144,6 +134,21 @@ const FEEDS = [
   {
     url: "https://www.woshipm.com/feed",
     source: "人人都是产品经理",
+    category: "chinese",
+  },
+  {
+    url: "https://www.jiqizhixin.com/rss",
+    source: "机器之心",
+    category: "chinese",
+  },
+  {
+    url: "https://sspai.com/feed",
+    source: "少数派",
+    category: "chinese",
+  },
+  {
+    url: "https://www.ifanr.com/feed",
+    source: "爱范儿",
     category: "chinese",
   },
 ];
@@ -166,16 +171,16 @@ export async function fetchAllFeeds(): Promise<FeedItem[]> {
           .map((item) => ({
             title: item.title ?? "",
             link: item.link ?? "",
-            // keep full snippet — up to 1200 chars so Claude has enough context
             contentSnippet: (item.contentSnippet ?? item.content ?? "").slice(0, 1200),
             pubDate: item.pubDate ?? new Date().toISOString(),
             source,
             category,
           }));
 
+        console.log(`[feeds] ✓ ${source}: ${items.length} items`);
         results.push(...items);
       } catch (err) {
-        console.warn(`[feeds] Failed to fetch ${source}: ${err}`);
+        console.warn(`[feeds] ✗ ${source}: ${(err as Error).message}`);
       }
     })
   );

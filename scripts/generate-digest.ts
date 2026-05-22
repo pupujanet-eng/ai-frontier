@@ -122,28 +122,28 @@ ${batch.map((item, idx) => `[${idx}] 标题: ${item.title}\n    来源: ${item.s
 }
 
 async function generateEditorNote(hotRanking: DigestItem[], pmHighlights: DigestItem[]): Promise<string> {
-  const top = hotRanking.slice(0, 6);
-  const pmTop = pmHighlights.slice(0, 3);
+  const top = hotRanking.slice(0, 8);
+  const pmTop = pmHighlights.slice(0, 4);
 
-  const prompt = `今天 AI 圈全局热榜 Top ${top.length}：
-${top.map((item) => `- [${item.importance}/10] ${item.titleZh}\n  ${item.summaryZh}`).join("\n")}
+  const prompt = `今天 AI 圈全局热榜 Top ${top.length}（每条附带链接，写作时可引用）：
+${top.map((item, i) => `${i + 1}. [${item.importance}/10] ${item.titleZh}
+   链接: ${item.url}
+   摘要: ${item.summaryZh}`).join("\n\n")}
 
-${pmTop.length > 0 ? `\n其中与 PM 工作直接相关：\n${pmTop.map((item) => `- ${item.titleZh} (${item.relevance}): ${item.insight}`).join("\n")}` : ""}
+${pmTop.length > 0 ? `\n与 PM 工作直接相关的条目：\n${pmTop.map((item) => `- ${item.titleZh}（${item.relevance}）: ${item.insight}\n  链接: ${item.url}`).join("\n")}` : ""}
 
-请写一段 150-200 字的今日洞见。
+请写一段 200-250 字的今日洞见，要求：
 
-风格要求：
-- 像一个真正懂 AI 行业的大厂从业者在评论今天的事，有判断、有观点、有一点点幽默
-- 先点出今天最值得停下来想的 1-2 件事，说清楚「为什么重要」而不只是「发生了什么」
-- 可以用对比、类比、反问来增加层次感
-- 如果有 PM 相关的项目（a2a/agent-ads/geo）值得专门说，点一下具体影响
-- 支持 Markdown 加粗（**文字**）来强调关键判断
-- 不要用「综上所述」「总结来看」这类废话结尾
-- 不废话，不正确的废话`;
+1. 点出今天 AI 圈最值得停下来想的 2-3 件事，说清楚「为什么重要」而不只是「发生了什么」
+2. 在提到具体事件时，**必须用 Markdown 链接格式把标题链接到对应 URL**，例如：[Google 开源 A2A 协议](https://github.com/xxx)
+3. 对这些事件给出你自己的判断和看法，可以有观点冲突、反问、预测
+4. 如果有 PM 项目相关的影响（a2a/agent-ads/geo），自然带出来，不要生硬
+5. 用 **加粗** 强调最关键的判断句
+6. 风格：像一个在内部飞书群发周报的大厂 AI 资深从业者，有料有趣，不废话`;
 
   const response = await client.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 600,
+    max_tokens: 800,
     messages: [{ role: "user", content: prompt }],
   });
 
