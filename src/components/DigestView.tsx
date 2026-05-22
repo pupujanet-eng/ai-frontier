@@ -94,11 +94,20 @@ function LabelTypeBadge({ labelType }: { labelType?: string }) {
 function SectionHeader({ id, icon, title, count }: { id: string; icon: string; title: string; count: number }) {
   return (
     <div className="flex items-center gap-3 mb-5">
-      <span className="text-[15px] leading-none text-[#9A9A94]">{icon}</span>
+      <span className="text-[14px] leading-none text-[#C0BFB8]">{icon}</span>
       <h2 className="text-[15px] font-semibold text-[#1A1A18] tracking-tight shrink-0">{title}</h2>
       <div className="flex-1 h-[1px] bg-[#EFEFEC]" />
-      <span className="text-[12px] text-[#9A9A94] shrink-0">{count} 条</span>
+      <span className="text-[11px] text-[#B0B0A8] shrink-0">{count}</span>
     </div>
+  );
+}
+
+function highlightNumbers(text: string) {
+  const parts = text.split(/(\d+[\d,.%x倍+\-]*(?:\s*[倍%万亿k星])?)/g);
+  return parts.map((part, i) =>
+    /^\d/.test(part)
+      ? <mark key={i} className="bg-transparent text-[#1A1A18] font-semibold not-italic">{part}</mark>
+      : part
   );
 }
 
@@ -125,65 +134,61 @@ function ItemCard({
       `}
     >
       <div className="p-5">
-        {/* title row */}
-        <div className="flex items-start justify-between gap-3 mb-2.5">
-          <div className="flex items-start gap-2 flex-1 min-w-0">
-            {rank !== undefined && (
-              <span className="text-[11px] font-mono text-[#C0BFB8] mt-0.5 shrink-0 w-5 pt-px">{String(rank + 1).padStart(2, "0")}</span>
-            )}
-            <a
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-[14px] leading-snug text-[#1A1A18] hover:text-blue-600 transition-colors"
-            >
-              {item.titleZh || item.title}
-            </a>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
-            <LabelTypeBadge labelType={item.labelType} />
-            <RelevanceBadge relevance={item.relevance} />
-          </div>
+        {/* badges row */}
+        <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+          {rank !== undefined && (
+            <span className="text-[10px] font-mono text-[#C0BFB8] shrink-0">{String(rank + 1).padStart(2, "0")}</span>
+          )}
+          <LabelTypeBadge labelType={item.labelType} />
+          <RelevanceBadge relevance={item.relevance} />
+          {showImportance && <ImportanceBar score={item.importance ?? 5} />}
         </div>
 
-        {/* summary — full display, no truncation */}
+        {/* title — prominent, clickable */}
+        <a
+          href={item.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block font-semibold text-[14.5px] leading-snug text-[#1A1A18] hover:text-blue-600 transition-colors mb-2.5 group-hover:underline decoration-[#D0D0CA] underline-offset-2"
+        >
+          {item.titleZh || item.title}
+        </a>
+
+        {/* summary with number highlights */}
         {item.summaryZh && (
-          <div className="text-[13px] text-[#6A6A66] leading-[1.8] mb-3 pl-7 prose-digest">
-            <ReactMarkdown>{item.summaryZh}</ReactMarkdown>
-          </div>
+          <p className="text-[13px] text-[#6A6A66] leading-[1.8] mb-3">
+            {highlightNumbers(item.summaryZh)}
+          </p>
         )}
 
-        {/* insight — only when relevant to PM projects */}
+        {/* insight */}
         {item.insight && item.relevance !== "general" && (
-          <div className="ml-7 border-l-[3px] border-emerald-300 bg-emerald-50 rounded-r-xl px-3.5 py-2.5 mb-3">
+          <div className="border-l-[3px] border-emerald-300 bg-emerald-50 rounded-r-xl px-3.5 py-2.5 mb-3">
             <p className="text-[12px] text-emerald-700 leading-relaxed">{item.insight}</p>
           </div>
         )}
 
         {/* footer */}
-        <div className="flex items-center justify-between gap-2 pl-7">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[11px] text-[#9A9A94]">{item.source}</span>
-            {item.tags.slice(0, 3).map((tag) => (
-              <span key={tag} className="text-[11px] text-[#9A9A94] bg-[#F5F5F2] border border-[#EFEFEC] px-2 py-0.5 rounded-full hidden sm:inline">
+        <div className="flex items-center justify-between gap-2 mt-1">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[11px] text-[#B0B0A8]">{item.source}</span>
+            {item.tags?.slice(0, 2).map((tag) => (
+              <span key={tag} className="text-[10px] text-[#B0B0A8] bg-[#F5F5F2] border border-[#EFEFEC] px-1.5 py-0.5 rounded-full hidden sm:inline">
                 {tag}
               </span>
             ))}
           </div>
-          <div className="flex items-center gap-3">
-            {showImportance && <ImportanceBar score={item.importance ?? 5} />}
-            <a
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[11px] text-[#9A9A94] hover:text-blue-500 transition-colors shrink-0 flex items-center gap-0.5"
-            >
-              原文
-              <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
-                <path d="M2 8L8 2M8 2H4M8 2V6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </a>
-          </div>
+          <a
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] text-blue-400 hover:text-blue-600 transition-colors shrink-0 flex items-center gap-0.5 font-medium"
+          >
+            原文
+            <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+              <path d="M2 8L8 2M8 2H4M8 2V6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </a>
         </div>
       </div>
     </div>
@@ -195,61 +200,63 @@ function ItemCard({
 ───────────────────────────────────────── */
 
 function HotRankingCard({ item, index }: { item: DigestItem; index: number }) {
-  const isTop3 = index < 3;
+  const rankColors = ["text-amber-500", "text-stone-400", "text-orange-400"];
   return (
     <div className={`group relative rounded-2xl bg-[#FEFEFE] transition-all duration-200
       shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.09)]
-      ${isTop3 ? "border border-[#EFEFEC]" : ""}
+      ${index < 3 ? "border border-[#EFEFEC]" : ""}
     `}>
       <div className="p-5">
-        {/* rank + meta row */}
-        <div className="flex items-center gap-2.5 mb-2.5">
-          <span className={`text-[18px] font-bold font-mono shrink-0 leading-none
-            ${index === 0 ? "text-amber-500" : index === 1 ? "text-stone-400" : index === 2 ? "text-orange-400" : "text-[#DEDDD6]"}
+        {/* rank row */}
+        <div className="flex items-center gap-2 mb-2.5">
+          <span className={`text-[20px] font-bold font-mono shrink-0 leading-none tabular-nums
+            ${rankColors[index] ?? "text-[#DEDDD6]"}
           `}>
             {String(index + 1).padStart(2, "0")}
           </span>
-          <div className="flex items-center gap-1.5 flex-wrap flex-1">
+          <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
             <LabelTypeBadge labelType={item.labelType} />
             <RelevanceBadge relevance={item.relevance} />
           </div>
           <ImportanceBar score={item.importance ?? 5} />
         </div>
 
-        {/* title */}
+        {/* title — large and clickable */}
         <a
           href={item.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="block font-semibold text-[14px] leading-snug text-[#1A1A18] hover:text-blue-600 transition-colors mb-2.5"
+          className="block font-semibold text-[15px] leading-snug text-[#1A1A18] hover:text-blue-600 transition-colors mb-3 group-hover:underline decoration-[#D0D0CA] underline-offset-2"
         >
           {item.titleZh || item.title}
         </a>
 
-        {/* full summary */}
+        {/* summary with number highlights */}
         {item.summaryZh && (
-          <div className="text-[13px] text-[#6A6A66] leading-[1.8] mb-3 prose-digest">
-            <ReactMarkdown>{item.summaryZh}</ReactMarkdown>
-          </div>
+          <p className="text-[13px] text-[#6A6A66] leading-[1.8] mb-3">
+            {highlightNumbers(item.summaryZh)}
+          </p>
         )}
 
-        {/* insight if pm-relevant */}
+        {/* insight */}
         {item.insight && item.relevance !== "general" && (
           <div className="border-l-[3px] border-emerald-300 bg-emerald-50 rounded-r-xl px-3.5 py-2.5 mb-3">
             <p className="text-[12px] text-emerald-700 leading-relaxed">{item.insight}</p>
           </div>
         )}
 
-        {/* source + tags */}
-        <div className="flex items-center gap-2 flex-wrap mt-1">
-          <span className="text-[11px] text-[#9A9A94]">{item.source}</span>
-          {item.tags.slice(0, 3).map((tag) => (
-            <span key={tag} className="text-[11px] text-[#9A9A94] bg-[#F5F5F2] border border-[#EFEFEC] px-2 py-0.5 rounded-full hidden sm:inline">
-              {tag}
-            </span>
-          ))}
+        {/* footer */}
+        <div className="flex items-center justify-between gap-2 mt-1">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[11px] text-[#B0B0A8]">{item.source}</span>
+            {item.tags?.slice(0, 2).map((tag) => (
+              <span key={tag} className="text-[10px] text-[#B0B0A8] bg-[#F5F5F2] border border-[#EFEFEC] px-1.5 py-0.5 rounded-full hidden sm:inline">
+                {tag}
+              </span>
+            ))}
+          </div>
           <a href={item.url} target="_blank" rel="noopener noreferrer"
-            className="ml-auto text-[11px] text-[#9A9A94] hover:text-blue-500 transition-colors flex items-center gap-0.5">
+            className="text-[11px] text-blue-400 hover:text-blue-600 font-medium transition-colors flex items-center gap-0.5 shrink-0">
             原文
             <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
               <path d="M2 8L8 2M8 2H4M8 2V6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
@@ -440,28 +447,12 @@ function MobileTabNav({ activeSection, counts }: { activeSection: string; counts
 ───────────────────────────────────────── */
 
 function DesktopSidebar({
-  activeSection, counts, searchQuery, onSearch,
+  activeSection, counts,
 }: {
   activeSection: string; counts: Record<string, number>;
-  searchQuery: string; onSearch: (q: string) => void;
 }) {
   return (
-    <aside className="hidden lg:flex w-48 shrink-0 sticky top-14 self-start h-[calc(100vh-3.5rem)] flex-col pt-8 pl-2 pr-4">
-      <div className="relative mb-6">
-        <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9A9A94]" width="12" height="12" viewBox="0 0 16 16" fill="none">
-          <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.5"/>
-          <path d="M10.5 10.5L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        </svg>
-        <input
-          id="search-input"
-          type="text"
-          placeholder="搜索"
-          value={searchQuery}
-          onChange={(e) => onSearch(e.target.value)}
-          className="w-full bg-white border border-[#E8E8E4] rounded-lg pl-8 pr-3 py-2 text-[12px] text-[#1A1A18] placeholder-[#9A9A94] outline-none focus:border-[#D0D0CA] focus:ring-2 focus:ring-blue-50 transition-all"
-        />
-      </div>
-
+    <aside className="hidden lg:flex w-44 shrink-0 sticky top-14 self-start h-[calc(100vh-3.5rem)] flex-col pt-8 pl-2 pr-4">
       <nav className="flex flex-col gap-0.5 flex-1 overflow-y-auto">
         {SECTIONS.map(({ id, label, icon, key }) => {
           const count = counts[id] ?? 0;
@@ -599,15 +590,40 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
         className="sticky top-0 z-50 border-b"
         style={{ background: "rgba(244,243,239,0.92)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", borderColor: "#E2E1DC" }}
       >
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-8 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-xl bg-[#1A1A18] flex items-center justify-center shrink-0">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-8 h-14 flex items-center gap-4">
+          {/* Logo */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <div className="w-7 h-7 rounded-xl bg-[#1A1A18] flex items-center justify-center">
               <span className="text-[10px] font-bold text-white tracking-tight">日报</span>
             </div>
-            <span className="font-semibold text-[15px] text-[#1A1A18] tracking-tight">pupu的AI日报</span>
+            <span className="font-semibold text-[15px] text-[#1A1A18] tracking-tight hidden sm:block">pupu的AI日报</span>
           </div>
 
-          <div className="flex items-center gap-3 sm:gap-4">
+          {/* Search — center, desktop only */}
+          <div className="relative flex-1 max-w-xs hidden lg:block">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9A9A94]" width="12" height="12" viewBox="0 0 16 16" fill="none">
+              <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M10.5 10.5L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            <input
+              id="search-input"
+              type="text"
+              placeholder="搜索资讯、来源、标签..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setFocusedIdx(-1); }}
+              className="w-full bg-white border border-[#E8E8E4] rounded-xl pl-8 pr-3 py-1.5 text-[12px] text-[#1A1A18] placeholder-[#C0BFB8] outline-none focus:border-[#C8C8C2] focus:ring-2 focus:ring-blue-50 transition-all"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9A9A94] hover:text-[#1A1A18] transition-colors">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </button>
+            )}
+          </div>
+
+          {/* Right meta */}
+          <div className="ml-auto flex items-center gap-3 shrink-0">
             <span className="text-[12px] text-[#9A9A94] hidden sm:block">{digest.dateZh}</span>
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -624,25 +640,31 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
         <DesktopSidebar
           activeSection={activeSection}
           counts={counts}
-          searchQuery={searchQuery}
-          onSearch={(q) => { setSearchQuery(q); setFocusedIdx(-1); }}
         />
 
         <main className="flex-1 min-w-0 py-6 sm:py-8">
 
           {/* Mobile search */}
-          <div className="relative mb-6 lg:hidden">
-            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9A9A94]" width="13" height="13" viewBox="0 0 16 16" fill="none">
+          <div className="relative mb-5 lg:hidden">
+            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#B0B0A8]" width="13" height="13" viewBox="0 0 16 16" fill="none">
               <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.5"/>
               <path d="M10.5 10.5L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
             <input
+              id="search-input"
               type="text"
-              placeholder="搜索资讯..."
+              placeholder="搜索资讯、来源、标签..."
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setFocusedIdx(-1); }}
-              className="w-full bg-white border border-[#E8E8E4] rounded-2xl pl-9 pr-4 py-3 text-[14px] text-[#1A1A18] placeholder-[#9A9A94] outline-none focus:border-[#D0D0CA] focus:ring-2 focus:ring-blue-50 transition-all"
+              className="w-full bg-white border border-[#E8E8E4] rounded-2xl pl-9 pr-4 py-2.5 text-[13px] text-[#1A1A18] placeholder-[#C0BFB8] outline-none focus:border-[#C8C8C2] focus:ring-2 focus:ring-blue-50 transition-all"
             />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery("")} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9A9A94] hover:text-[#1A1A18]">
+                <svg width="11" height="11" viewBox="0 0 10 10" fill="none">
+                  <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </button>
+            )}
           </div>
 
           {/* Hero */}

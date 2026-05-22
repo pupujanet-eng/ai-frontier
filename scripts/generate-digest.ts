@@ -9,27 +9,41 @@ import * as path from "path";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-// ── System prompt: importance-first, project relevance is secondary ──
-const SYSTEM_PROMPT = `你是一个服务于 AI 行业从业者（AI产品经理）的前沿资讯分析师。
+// ── System prompt: importance-first, writer voice, project relevance is secondary ──
+const SYSTEM_PROMPT = `你是一个服务于互联网大厂 AI 从业者的资深前沿资讯分析师，同时也是一个有观点、有品味的 AI 行业评论者。
 
 读者背景（仅供 relevance 字段参考，不影响重要性评分）：
 - 核心项目 a2a：Agent-to-Agent 协议、AI 服务互联
 - 核心项目 agent-ads：用 Agent 重构广告投放链路
 - 核心项目 geo：GEO，让内容被 AI 搜索引擎引用
 
-【核心原则】先判断事件对整个 AI 行业的客观影响力，再标注与读者项目的关联。
-一条 general 的大新闻（如新模型发布）比一条勉强相关的小新闻更有价值。
+【核心原则】
+1. 先判断事件对整个 AI 行业的客观影响力，再标注与读者项目的关联。一条 general 的大新闻比勉强相关的小新闻更有价值。
+2. 不要把读者项目挂在嘴边——除非真的强相关，否则 relevance 填 general。
 
-字段说明：
-- titleZh: 中文标题，保留英文缩写，控制在 25 字内
-- summaryZh: 结构化摘要，格式：【核心】一句话结论。【亮点】关键数据/技术点。【影响】行业影响判断。总计 80-120 字。
-- importance: 整数 1-10，客观评估事件的行业影响力（10=GPT-5 级别发布，1=小工具更新）
-- relevance: a2a / agent-ads / geo / general（只有真正相关才打具体标签）
-- labelType: 从以下选一个最贴切的标签类型：
-    model-release（新模型发布）| benchmark（评测/排行）| knowledge-base（RAG/知识库）|
-    open-source（开源项目）| industry-news（行业动态）| research（学术研究）|
-    policy（政策监管）| thought-leader（大佬观点）| general（其他）
-- insight: 仅当 relevance 非 general 时填写，50字内，"→"开头，说明对具体项目的影响
+【titleZh 写法】
+- 不要写新闻播报式标题（"XX公司发布XX产品"）
+- 要有观点、有角度、有一点幽默感，像一个真正懂行的人在评论这件事
+- 可以用对比、反问、隐喻、引号来制造张力
+- 保留英文缩写/专有名词
+- 控制在 28 字内
+
+好标题示例：
+- "Karpathy 实验：LLM 作为「活的维基百科」，RAG 还是会被颠覆吗？"
+- "Meta 广告 Agent 实测 CTR +34%，但真正的革命是「人被移出了回路」"
+- "Agent 互联的「TCP/IP 时刻」来了——Google 正式开源 A2A 协议"
+- "Altman 说「我们已过了狭域 AGI」——这句话应该让你感到焦虑还是兴奋？"
+
+【summaryZh 写法】
+- 自然流畅的叙述，不要用【核心】【亮点】等死板格式标签
+- 先说最重要的一件事，再补充关键数据或技术细节，最后一句给行业判断
+- 80-120 字，有信息密度，但读起来不累
+
+【其他字段】
+- importance: 整数 1-10，客观评估行业影响力（10=GPT-5 级别发布，1=小工具更新）
+- relevance: a2a / agent-ads / geo / general（只有真正相关才打具体标签，不要强行挂钩）
+- labelType: model-release | benchmark | knowledge-base | open-source | industry-news | research | policy | thought-leader | general
+- insight: 仅当 relevance 非 general 时填写，50字内，"→"开头，直接说对具体项目的影响，不废话
 - tags: 3-5 个技术标签
 
 只返回 JSON 数组，不要多余文字。`;
@@ -112,15 +126,24 @@ async function generateEditorNote(hotRanking: DigestItem[], pmHighlights: Digest
   const pmTop = pmHighlights.slice(0, 3);
 
   const prompt = `今天 AI 圈全局热榜 Top ${top.length}：
-${top.map((item) => `- [${item.importance}/10] ${item.titleZh}: ${item.summaryZh}`).join("\n")}
+${top.map((item) => `- [${item.importance}/10] ${item.titleZh}\n  ${item.summaryZh}`).join("\n")}
 
 ${pmTop.length > 0 ? `\n其中与 PM 工作直接相关：\n${pmTop.map((item) => `- ${item.titleZh} (${item.relevance}): ${item.insight}`).join("\n")}` : ""}
 
-请写一段 150-200 字的今日洞见：先判断今天 AI 圈最重要的 1-2 件事及其意义，再点出对 A2A/Agent广告/GEO 方向的具体影响。风格直接、有判断力，不废话。`;
+请写一段 150-200 字的今日洞见。
+
+风格要求：
+- 像一个真正懂 AI 行业的大厂从业者在评论今天的事，有判断、有观点、有一点点幽默
+- 先点出今天最值得停下来想的 1-2 件事，说清楚「为什么重要」而不只是「发生了什么」
+- 可以用对比、类比、反问来增加层次感
+- 如果有 PM 相关的项目（a2a/agent-ads/geo）值得专门说，点一下具体影响
+- 支持 Markdown 加粗（**文字**）来强调关键判断
+- 不要用「综上所述」「总结来看」这类废话结尾
+- 不废话，不正确的废话`;
 
   const response = await client.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 512,
+    max_tokens: 600,
     messages: [{ role: "user", content: prompt }],
   });
 
