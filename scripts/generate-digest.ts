@@ -11,7 +11,7 @@ import * as path from "path";
 const client = new OpenAI({
   apiKey: process.env.IDEALAB_API_KEY,
   baseURL: process.env.IDEALAB_BASE_URL || "https://idealab.alibaba-inc.com/api/openai/v1",
-  timeout: 90_000, // 单次请求超时 90s，避免挂死（SDK 默认 10 分钟）
+  timeout: 240_000, // 单次请求超时 240s：大批次生成可达 60-120s，90s 会误杀（SDK 默认 10 分钟太长）
 });
 
 // 可配置模型名称，通过环境变量覆盖
