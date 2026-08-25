@@ -11,6 +11,7 @@ import * as path from "path";
 const client = new OpenAI({
   apiKey: process.env.IDEALAB_API_KEY,
   baseURL: process.env.IDEALAB_BASE_URL || "https://idealab.alibaba-inc.com/api/openai/v1",
+  timeout: 90_000, // 单次请求超时 90s，避免挂死（SDK 默认 10 分钟）
 });
 
 // 可配置模型名称，通过环境变量覆盖
@@ -92,9 +93,9 @@ async function chatCompletion(
       const errMsg = err instanceof Error ? err.message : String(err);
       console.warn(`[generate] API call failed (attempt ${attempt + 1}/${maxRetries}):`, errMsg);
 
-      // 如果是限流错误，等待更长时间后重试
+      // 如果是限流错误，等待更长时间后重试（IdeaLab 配额为 10次/60分钟 滚动窗口，短等待无意义）
       if (errMsg.includes("超过了") || errMsg.includes("rate") || errMsg.includes("429")) {
-        const waitTime = 60_000 * (attempt + 1); // 递增等待 1/2/3 分钟
+        const waitTime = 600_000; // 等 10 分钟让滚动窗口释放配额
         console.log(`[generate] Rate limited, waiting ${waitTime / 1000}s before retry...`);
         await new Promise((r) => setTimeout(r, waitTime));
         continue;
@@ -112,7 +113,7 @@ async function classifyAndTranslate(
 ): Promise<DigestItem[]> {
   if (items.length === 0) return [];
 
-  const batchSize = 10;
+  const batchSize = 13;
   const results: DigestItem[] = [];
 
   for (let i = 0; i < items.length; i += batchSize) {
@@ -135,7 +136,7 @@ ${batch.map((item, idx) => `[${idx}] 标题: ${item.title}\n    来源: ${item.s
           { role: "user", content: userPrompt },
         ],
         CLASSIFY_MODEL,
-        4096,
+        6144,
         { responseFormat: "json" }
       );
 

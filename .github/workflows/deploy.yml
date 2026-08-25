@@ -63,6 +63,7 @@ jobs:
           exit 1
 
       - name: Generate daily digest
+        timeout-minutes: 120
         env:
           IDEALAB_API_KEY: ${{ secrets.IDEALAB_API_KEY }}
           CLASSIFY_MODEL: ${{ vars.CLASSIFY_MODEL || '' }}
