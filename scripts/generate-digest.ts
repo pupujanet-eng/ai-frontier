@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import { DigestItem, DailyDigest } from "../src/types";
 import { fetchGitHubTrending, filterAIRepos, GitHubRepo } from "./fetch-github-trending";
 import { fetchAllFeeds, FeedItem } from "./fetch-feeds";
@@ -7,7 +7,18 @@ import { zhCN } from "date-fns/locale";
 import * as fs from "fs";
 import * as path from "path";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+// ── IdeaLab 内部模型代理（OpenAI 兼容 API）──
+const client = new OpenAI({
+  apiKey: process.env.IDEALAB_API_KEY,
+  baseURL: process.env.IDEALAB_BASE_URL || "https://idealab.alibaba-inc.com/api/openai/v1",
+});
+
+// 可配置模型名称，通过环境变量覆盖
+const CLASSIFY_MODEL = process.env.CLASSIFY_MODEL || "gpt-5-mini-0807-global";
+const EDITOR_MODEL = process.env.EDITOR_MODEL || "gpt-5-0807-global";
+
+// 调用间隔（毫秒），IdeaLab 有频率限制（默认 10 次/60 分钟）
+const CALL_INTERVAL_MS = Number(process.env.CALL_INTERVAL_MS) || 6000;
 
 // ── System prompt: importance-first, writer voice, project relevance is secondary ──
 const SYSTEM_PROMPT = `你是一个服务于互联网大厂 AI 从业者的资深前沿资讯分析师，同时也是一个有观点、有品味的 AI 行业评论者。
@@ -48,6 +59,54 @@ const SYSTEM_PROMPT = `你是一个服务于互联网大厂 AI 从业者的资�
 
 只返回 JSON 数组，不要多余文字。`;
 
+/** 简单限流：每次调用前等待 */
+async function rateLimitWait() {
+  await new Promise((r) => setTimeout(r, CALL_INTERVAL_MS));
+}
+
+/** 带重试的 API 调用 */
+async function chatCompletion(
+  messages: OpenAI.ChatCompletionMessageParam[],
+  model: string,
+  maxTokens: number,
+  options?: { responseFormat?: "json" }
+): Promise<string> {
+  const maxRetries = 3;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      await rateLimitWait();
+
+      const params: OpenAI.ChatCompletionCreateParamsNonStreaming = {
+        model,
+        messages,
+        max_tokens: maxTokens,
+      };
+
+      if (options?.responseFormat === "json") {
+        params.response_format = { type: "json_object" };
+      }
+
+      const response = await client.chat.completions.create(params);
+      return response.choices[0]?.message?.content || "";
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.warn(`[generate] API call failed (attempt ${attempt + 1}/${maxRetries}):`, errMsg);
+
+      // 如果是限流错误，等待更长时间后重试
+      if (errMsg.includes("超过了") || errMsg.includes("rate") || errMsg.includes("429")) {
+        const waitTime = 60_000 * (attempt + 1); // 递增等待 1/2/3 分钟
+        console.log(`[generate] Rate limited, waiting ${waitTime / 1000}s before retry...`);
+        await new Promise((r) => setTimeout(r, waitTime));
+        continue;
+      }
+
+      if (attempt === maxRetries - 1) throw err;
+      await new Promise((r) => setTimeout(r, 5000 * (attempt + 1)));
+    }
+  }
+  return "";
+}
+
 async function classifyAndTranslate(
   items: Array<{ title: string; content: string; url: string; source: string; category: string }>
 ): Promise<DigestItem[]> {
@@ -59,7 +118,7 @@ async function classifyAndTranslate(
   for (let i = 0; i < items.length; i += batchSize) {
     const batch = items.slice(i, i + batchSize);
 
-    const prompt = `处理以下 ${batch.length} 条 AI 资讯，返回 JSON 数组。
+    const userPrompt = `处理以下 ${batch.length} 条 AI 资讯，返回 JSON 数组。
 
 每条字段：titleZh, summaryZh, importance(1-10), relevance, labelType, insight, tags
 
@@ -70,14 +129,16 @@ ${batch.map((item, idx) => `[${idx}] 标题: ${item.title}\n    来源: ${item.s
 [{"titleZh":"","summaryZh":"","importance":5,"relevance":"general","labelType":"general","insight":"","tags":[]}]`;
 
     try {
-      const response = await client.messages.create({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 2048,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: prompt }],
-      });
+      const text = await chatCompletion(
+        [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: userPrompt },
+        ],
+        CLASSIFY_MODEL,
+        2048,
+        { responseFormat: "json" }
+      );
 
-      const text = response.content[0].type === "text" ? response.content[0].text : "";
       const jsonMatch = text.match(/\[[\s\S]*\]/);
       if (!jsonMatch) { console.warn(`[generate] No JSON in batch ${i}`); continue; }
 
@@ -112,10 +173,6 @@ ${batch.map((item, idx) => `[${idx}] 标题: ${item.title}\n    来源: ${item.s
     } catch (err) {
       console.warn(`[generate] Batch ${i} failed:`, err);
     }
-
-    if (i + batchSize < items.length) {
-      await new Promise((r) => setTimeout(r, 2000));
-    }
   }
 
   return results;
@@ -141,17 +198,17 @@ ${pmTop.length > 0 ? `\n与 PM 工作直接相关的条目：\n${pmTop.map((item
 5. 用 **加粗** 强调最关键的判断句
 6. 风格：像一个在内部飞书群发周报的大厂 AI 资深从业者，有料有趣，不废话`;
 
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 800,
-    messages: [{ role: "user", content: prompt }],
-  });
-
-  return response.content[0].type === "text" ? response.content[0].text : "";
+  return await chatCompletion(
+    [{ role: "user", content: prompt }],
+    EDITOR_MODEL,
+    800
+  );
 }
 
 async function main() {
   console.log("[digest] Starting daily digest generation...");
+  console.log(`[digest] Models: classify=${CLASSIFY_MODEL}, editor=${EDITOR_MODEL}`);
+  console.log(`[digest] Call interval: ${CALL_INTERVAL_MS}ms`);
 
   const today = new Date();
   const dateStr = format(today, "yyyy-MM-dd");
@@ -195,7 +252,7 @@ async function main() {
   }
 
   // 3. Classify feeds — cap per-category so chinese isn't crowded out
-  console.log("[digest] Processing feeds with Claude...");
+  console.log("[digest] Processing feeds with AI...");
   const CAP: Record<string, number> = {
     "thought-leader": 15,
     "industry": 15,
@@ -287,7 +344,7 @@ async function main() {
     fs.writeFileSync(indexPath, JSON.stringify(index, null, 2), "utf-8");
   }
 
-  console.log(`[digest] ✅ Done! Saved to ${outputPath}`);
+  console.log(`[digest] Done! Saved to ${outputPath}`);
   console.log(`[digest] Hot ranking: ${hotRanking.length} | PM highlights: ${pmHighlights.length}`);
   console.log(`[digest] GitHub new: ${githubNewItems.length} | hot: ${githubHotItems.length}`);
   console.log(`[digest] Feeds: ${feedDigestItems.length} total`);

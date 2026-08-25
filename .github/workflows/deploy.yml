@@ -52,7 +52,9 @@ jobs:
 
       - name: Generate daily digest
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          IDEALAB_API_KEY: ${{ secrets.IDEALAB_API_KEY }}
+          CLASSIFY_MODEL: ${{ vars.CLASSIFY_MODEL || '' }}
+          EDITOR_MODEL: ${{ vars.EDITOR_MODEL || '' }}
         run: npm run generate
 
       - name: Setup Pages
