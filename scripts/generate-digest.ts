@@ -307,7 +307,12 @@ async function main() {
 
   // 7. Editor note
   console.log("[digest] Generating editor note...");
-  const editorNote = await generateEditorNote(hotRanking, pmHighlights);
+  let editorNote = "";
+  try {
+    editorNote = await generateEditorNote(hotRanking, pmHighlights);
+  } catch (err) {
+    console.warn("[digest] Editor note failed, continuing without it:", err);
+  }
 
   const digest: DailyDigest = {
     date: dateStr,
