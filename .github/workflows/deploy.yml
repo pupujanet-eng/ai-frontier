@@ -14,7 +14,7 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -48,7 +48,19 @@ jobs:
           cache: ${{ steps.detect-package-manager.outputs.manager }}
 
       - name: Install dependencies
-        run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }} --no-audit --no-fund || ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }} --no-audit --no-fund
+        timeout-minutes: 15
+        run: |
+          echo "npm before: $(npm --version)"
+          npm install -g npm@latest --no-fund
+          echo "npm after: $(npm --version)"
+          for attempt in 1 2 3; do
+            echo "=== Install attempt $attempt ==="
+            timeout 240 ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }} --no-audit --no-fund && exit 0
+            echo "::warning::Install did not succeed, retrying..."
+            sleep 3
+          done
+          echo "::error::Install failed after 3 attempts"
+          exit 1
 
       - name: Generate daily digest
         env:
