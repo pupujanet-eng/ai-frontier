@@ -112,7 +112,7 @@ async function classifyAndTranslate(
 ): Promise<DigestItem[]> {
   if (items.length === 0) return [];
 
-  const batchSize = 5;
+  const batchSize = 10;
   const results: DigestItem[] = [];
 
   for (let i = 0; i < items.length; i += batchSize) {
@@ -135,7 +135,7 @@ ${batch.map((item, idx) => `[${idx}] 标题: ${item.title}\n    来源: ${item.s
           { role: "user", content: userPrompt },
         ],
         CLASSIFY_MODEL,
-        2048,
+        4096,
         { responseFormat: "json" }
       );
 
