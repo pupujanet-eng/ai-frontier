@@ -1,11 +1,9 @@
 name: Deploy Next.js site to Pages
 
 on:
-  schedule:
-    - cron: "0 0 * * *"   # 每天 UTC 00:00 = 北京时间 08:00
+  # TEMP: 暂停 schedule/push 触发——GitHub runner 连不上 IdeaLab（ETIMEDOUT），
+  # 架构方案确定后恢复 cron "0 0 * * *" 与 push branches: ["main"]
   workflow_dispatch:
-  push:
-    branches: ["main"]
 
 permissions:
   contents: read
