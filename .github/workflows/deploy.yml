@@ -1,9 +1,11 @@
 name: Deploy Next.js site to Pages
 
 on:
-  # TEMP: 暂停 schedule/push 触发——GitHub runner 连不上 IdeaLab（ETIMEDOUT），
-  # 架构方案确定后恢复 cron "0 0 * * *" 与 push branches: ["main"]
+  schedule:
+    - cron: "0 0 * * *"   # 每天 UTC 00:00 = 北京时间 08:00
   workflow_dispatch:
+  push:
+    branches: ["main"]
 
 permissions:
   contents: read
@@ -61,9 +63,9 @@ jobs:
           exit 1
 
       - name: Generate daily digest
-        timeout-minutes: 180
+        timeout-minutes: 40
         env:
-          IDEALAB_API_KEY: ${{ secrets.IDEALAB_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CLASSIFY_MODEL: ${{ vars.CLASSIFY_MODEL || '' }}
           EDITOR_MODEL: ${{ vars.EDITOR_MODEL || '' }}
         run: npm run generate

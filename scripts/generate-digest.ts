@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import { DigestItem, DailyDigest } from "../src/types";
 import { fetchGitHubTrending, filterAIRepos, GitHubRepo } from "./fetch-github-trending";
 import { fetchAllFeeds, FeedItem } from "./fetch-feeds";
@@ -7,19 +7,16 @@ import { zhCN } from "date-fns/locale";
 import * as fs from "fs";
 import * as path from "path";
 
-// ── IdeaLab 内部模型代理（OpenAI 兼容 API）──
-const client = new OpenAI({
-  apiKey: process.env.IDEALAB_API_KEY,
-  baseURL: process.env.IDEALAB_BASE_URL || "https://idealab.alibaba-inc.com/api/openai/v1",
+// ── Anthropic 公网 API ──
+const client = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
   timeout: 240_000, // 单次请求超时 240s：大批次生成可达 60-120s，90s 会误杀（SDK 默认 10 分钟太长）
+  maxRetries: 0,    // 重试统一由 createMessage 处理
 });
 
 // 可配置模型名称，通过环境变量覆盖
-const CLASSIFY_MODEL = process.env.CLASSIFY_MODEL || "gpt-5-mini-0807-global";
-const EDITOR_MODEL = process.env.EDITOR_MODEL || "gpt-5-0807-global";
-
-// 调用间隔（毫秒），IdeaLab 有频率限制（默认 10 次/60 分钟）
-const CALL_INTERVAL_MS = Number(process.env.CALL_INTERVAL_MS) || 6000;
+const CLASSIFY_MODEL = process.env.CLASSIFY_MODEL || "claude-haiku-4-5-20251001";
+const EDITOR_MODEL = process.env.EDITOR_MODEL || "claude-sonnet-4-6";
 
 // ── System prompt: importance-first, writer voice, project relevance is secondary ──
 const SYSTEM_PROMPT = `你是一个服务于互联网大厂 AI 从业者的资深前沿资讯分析师，同时也是一个有观点、有品味的 AI 行业评论者。
@@ -60,48 +57,38 @@ const SYSTEM_PROMPT = `你是一个服务于互联网大厂 AI 从业者的资�
 
 只返回 JSON 数组，不要多余文字。`;
 
-/** 简单限流：每次调用前等待 */
-async function rateLimitWait() {
-  await new Promise((r) => setTimeout(r, CALL_INTERVAL_MS));
-}
-
 /** 带重试的 API 调用 */
-async function chatCompletion(
-  messages: OpenAI.ChatCompletionMessageParam[],
+async function createMessage(
+  prompt: string,
   model: string,
   maxTokens: number,
-  options?: { responseFormat?: "json" }
+  system?: string
 ): Promise<string> {
   const maxRetries = 3;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      await rateLimitWait();
-
-      const params: OpenAI.ChatCompletionCreateParamsNonStreaming = {
+      const response = await client.messages.create({
         model,
-        messages,
         max_tokens: maxTokens,
-      };
-
-      if (options?.responseFormat === "json") {
-        params.response_format = { type: "json_object" };
-      }
-
-      const response = await client.chat.completions.create(params);
-      return response.choices[0]?.message?.content || "";
+        ...(system ? { system } : {}),
+        messages: [{ role: "user", content: prompt }],
+      });
+      return response.content[0].type === "text" ? response.content[0].text : "";
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
+      const status = (err as { status?: number })?.status;
       console.warn(`[generate] API call failed (attempt ${attempt + 1}/${maxRetries}):`, errMsg);
 
-      // 如果是限流错误，等待更长时间后重试（IdeaLab 配额为 10次/60分钟 滚动窗口，短等待无意义）
-      if (errMsg.includes("超过了") || errMsg.includes("rate") || errMsg.includes("429")) {
-        const waitTime = 600_000; // 等 10 分钟让滚动窗口释放配额
-        console.log(`[generate] Rate limited, waiting ${waitTime / 1000}s before retry...`);
+      if (attempt === maxRetries - 1) throw err;
+
+      // 429 限流 / 529 过载：按分钟级退避等待
+      if (status === 429 || status === 529 || errMsg.includes("rate") || errMsg.includes("overloaded")) {
+        const waitTime = 60_000 * (attempt + 1);
+        console.log(`[generate] Rate limited/overloaded, waiting ${waitTime / 1000}s before retry...`);
         await new Promise((r) => setTimeout(r, waitTime));
         continue;
       }
 
-      if (attempt === maxRetries - 1) throw err;
       await new Promise((r) => setTimeout(r, 5000 * (attempt + 1)));
     }
   }
@@ -119,7 +106,7 @@ async function classifyAndTranslate(
   for (let i = 0; i < items.length; i += batchSize) {
     const batch = items.slice(i, i + batchSize);
 
-    const userPrompt = `处理以下 ${batch.length} 条 AI 资讯，返回 JSON 数组。
+    const prompt = `处理以下 ${batch.length} 条 AI 资讯，返回 JSON 数组。
 
 每条字段：titleZh, summaryZh, importance(1-10), relevance, labelType, insight, tags
 
@@ -130,15 +117,7 @@ ${batch.map((item, idx) => `[${idx}] 标题: ${item.title}\n    来源: ${item.s
 [{"titleZh":"","summaryZh":"","importance":5,"relevance":"general","labelType":"general","insight":"","tags":[]}]`;
 
     try {
-      const text = await chatCompletion(
-        [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userPrompt },
-        ],
-        CLASSIFY_MODEL,
-        6144,
-        { responseFormat: "json" }
-      );
+      const text = await createMessage(prompt, CLASSIFY_MODEL, 6144, SYSTEM_PROMPT);
 
       const jsonMatch = text.match(/\[[\s\S]*\]/);
       if (!jsonMatch) { console.warn(`[generate] No JSON in batch ${i}`); continue; }
@@ -174,6 +153,10 @@ ${batch.map((item, idx) => `[${idx}] 标题: ${item.title}\n    来源: ${item.s
     } catch (err) {
       console.warn(`[generate] Batch ${i} failed:`, err);
     }
+
+    if (i + batchSize < items.length) {
+      await new Promise((r) => setTimeout(r, 2000));
+    }
   }
 
   return results;
@@ -199,17 +182,12 @@ ${pmTop.length > 0 ? `\n与 PM 工作直接相关的条目：\n${pmTop.map((item
 5. 用 **加粗** 强调最关键的判断句
 6. 风格：像一个在内部飞书群发周报的大厂 AI 资深从业者，有料有趣，不废话`;
 
-  return await chatCompletion(
-    [{ role: "user", content: prompt }],
-    EDITOR_MODEL,
-    800
-  );
+  return await createMessage(prompt, EDITOR_MODEL, 800);
 }
 
 async function main() {
   console.log("[digest] Starting daily digest generation...");
   console.log(`[digest] Models: classify=${CLASSIFY_MODEL}, editor=${EDITOR_MODEL}`);
-  console.log(`[digest] Call interval: ${CALL_INTERVAL_MS}ms`);
 
   const today = new Date();
   const dateStr = format(today, "yyyy-MM-dd");
@@ -253,7 +231,7 @@ async function main() {
   }
 
   // 3. Classify feeds — cap per-category so chinese isn't crowded out
-  console.log("[digest] Processing feeds with AI...");
+  console.log("[digest] Processing feeds with Claude...");
   const CAP: Record<string, number> = {
     "thought-leader": 15,
     "industry": 15,
@@ -305,7 +283,7 @@ async function main() {
   const thoughtLeaderItems = feedDigestItems.filter((i) => i.category === "thought-leader");
   const chineseItems = feedDigestItems.filter((i) => i.category === "chinese");
 
-  // 7. Editor note
+  // 7. Editor note（失败兜底：允许空洞见，不阻塞日报产出）
   console.log("[digest] Generating editor note...");
   let editorNote = "";
   try {

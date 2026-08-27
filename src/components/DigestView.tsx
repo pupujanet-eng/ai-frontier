@@ -700,7 +700,7 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
                   <span className="text-[9px] font-bold text-white">✦</span>
                 </div>
                 <span className="text-[13px] font-semibold text-[#1A1A18]">今日洞见</span>
-                <span className="text-[11px] text-[#9A9A94] ml-1">· by GPT-5</span>
+                <span className="text-[11px] text-[#9A9A94] ml-1">· by Claude</span>
               </div>
               <div className="text-[14px] text-[#5A5A56] leading-[1.85]">
                 <ReactMarkdown components={mdComponents}>{digest.editorNote}</ReactMarkdown>
@@ -772,7 +772,7 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
 
           <footer className="mt-16 pt-6 border-t border-[#EFEFEC]">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <span className="text-[12px] text-[#9A9A94]">pupu的AI日报 · IdeaLab 每日自动生成</span>
+              <span className="text-[12px] text-[#9A9A94]">pupu的AI日报 · Claude API 每日自动生成</span>
               <div className="flex items-center gap-3 flex-wrap">
                 {(["model-release","benchmark","knowledge-base","thought-leader"] as const).map((k) => (
                   <span key={k} className={`inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full border ${LABEL_TYPE_COLORS[k]}`}>
