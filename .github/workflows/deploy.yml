@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "0 0 * * *"   # 每天 UTC 00:00 = 北京时间 08:00
   workflow_dispatch:
+    inputs:
+      skip_generate:
+        description: "跳过生成，直接用仓库内已有数据构建（API 故障时应急恢复站点用）"
+        type: boolean
+        default: false
   push:
     branches: ["main"]
 
@@ -63,6 +68,7 @@ jobs:
           exit 1
 
       - name: Generate daily digest
+        if: ${{ !inputs.skip_generate }}
         timeout-minutes: 40
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

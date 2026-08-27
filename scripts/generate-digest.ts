@@ -277,13 +277,19 @@ async function main() {
   // 5. PM highlights = hotRanking items with non-general relevance
   const pmHighlights = hotRanking.filter((i) => i.relevance !== "general");
 
+  // Guard: 全空则直接失败，防止空日报覆盖线上站点
+  if (allRepoItems.length + feedDigestItems.length === 0) {
+    console.error("[digest] No items generated (sources or API failed) — aborting to protect the live site");
+    process.exit(1);
+  }
+
   // 6. Section splits
   const researchItems = feedDigestItems.filter((i) => i.category === "research");
   const industryItems = feedDigestItems.filter((i) => i.category === "industry");
   const thoughtLeaderItems = feedDigestItems.filter((i) => i.category === "thought-leader");
   const chineseItems = feedDigestItems.filter((i) => i.category === "chinese");
 
-  // 7. Editor note（失败兜底：允许空洞见，不阻塞日报产出）
+  // 7. Editor note（失败兜底：允许空编辑语，不阻塞日报产出）
   console.log("[digest] Generating editor note...");
   let editorNote = "";
   try {
