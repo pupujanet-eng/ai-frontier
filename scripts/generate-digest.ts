@@ -7,16 +7,7 @@ import { zhCN } from "date-fns/locale";
 import * as fs from "fs";
 import * as path from "path";
 
-// ── Anthropic 公网 API ──
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-  timeout: 240_000, // 单次请求超时 240s：大批次生成可达 60-120s，90s 会误杀（SDK 默认 10 分钟太长）
-  maxRetries: 0,    // 重试统一由 createMessage 处理
-});
-
-// 可配置模型名称，通过环境变量覆盖
-const CLASSIFY_MODEL = process.env.CLASSIFY_MODEL || "claude-haiku-4-5-20251001";
-const EDITOR_MODEL = process.env.EDITOR_MODEL || "claude-sonnet-4-6";
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // ── System prompt: importance-first, writer voice, project relevance is secondary ──
 const SYSTEM_PROMPT = `你是一个服务于互联网大厂 AI 从业者的资深前沿资讯分析师，同时也是一个有观点、有品味的 AI 行业评论者。
@@ -57,50 +48,12 @@ const SYSTEM_PROMPT = `你是一个服务于互联网大厂 AI 从业者的资�
 
 只返回 JSON 数组，不要多余文字。`;
 
-/** 带重试的 API 调用 */
-async function createMessage(
-  prompt: string,
-  model: string,
-  maxTokens: number,
-  system?: string
-): Promise<string> {
-  const maxRetries = 3;
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      const response = await client.messages.create({
-        model,
-        max_tokens: maxTokens,
-        ...(system ? { system } : {}),
-        messages: [{ role: "user", content: prompt }],
-      });
-      return response.content[0].type === "text" ? response.content[0].text : "";
-    } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : String(err);
-      const status = (err as { status?: number })?.status;
-      console.warn(`[generate] API call failed (attempt ${attempt + 1}/${maxRetries}):`, errMsg);
-
-      if (attempt === maxRetries - 1) throw err;
-
-      // 429 限流 / 529 过载：按分钟级退避等待
-      if (status === 429 || status === 529 || errMsg.includes("rate") || errMsg.includes("overloaded")) {
-        const waitTime = 60_000 * (attempt + 1);
-        console.log(`[generate] Rate limited/overloaded, waiting ${waitTime / 1000}s before retry...`);
-        await new Promise((r) => setTimeout(r, waitTime));
-        continue;
-      }
-
-      await new Promise((r) => setTimeout(r, 5000 * (attempt + 1)));
-    }
-  }
-  return "";
-}
-
 async function classifyAndTranslate(
   items: Array<{ title: string; content: string; url: string; source: string; category: string }>
 ): Promise<DigestItem[]> {
   if (items.length === 0) return [];
 
-  const batchSize = 13;
+  const batchSize = 5;
   const results: DigestItem[] = [];
 
   for (let i = 0; i < items.length; i += batchSize) {
@@ -117,8 +70,14 @@ ${batch.map((item, idx) => `[${idx}] 标题: ${item.title}\n    来源: ${item.s
 [{"titleZh":"","summaryZh":"","importance":5,"relevance":"general","labelType":"general","insight":"","tags":[]}]`;
 
     try {
-      const text = await createMessage(prompt, CLASSIFY_MODEL, 6144, SYSTEM_PROMPT);
+      const response = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 2048,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: prompt }],
+      });
 
+      const text = response.content[0].type === "text" ? response.content[0].text : "";
       const jsonMatch = text.match(/\[[\s\S]*\]/);
       if (!jsonMatch) { console.warn(`[generate] No JSON in batch ${i}`); continue; }
 
@@ -182,12 +141,17 @@ ${pmTop.length > 0 ? `\n与 PM 工作直接相关的条目：\n${pmTop.map((item
 5. 用 **加粗** 强调最关键的判断句
 6. 风格：像一个在内部飞书群发周报的大厂 AI 资深从业者，有料有趣，不废话`;
 
-  return await createMessage(prompt, EDITOR_MODEL, 800);
+  const response = await client.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 800,
+    messages: [{ role: "user", content: prompt }],
+  });
+
+  return response.content[0].type === "text" ? response.content[0].text : "";
 }
 
 async function main() {
   console.log("[digest] Starting daily digest generation...");
-  console.log(`[digest] Models: classify=${CLASSIFY_MODEL}, editor=${EDITOR_MODEL}`);
 
   const today = new Date();
   const dateStr = format(today, "yyyy-MM-dd");
@@ -277,26 +241,23 @@ async function main() {
   // 5. PM highlights = hotRanking items with non-general relevance
   const pmHighlights = hotRanking.filter((i) => i.relevance !== "general");
 
-  // Guard: 全空则直接失败，防止空日报覆盖线上站点
-  if (allRepoItems.length + feedDigestItems.length === 0) {
-    console.error("[digest] No items generated (sources or API failed) — aborting to protect the live site");
-    process.exit(1);
-  }
-
   // 6. Section splits
   const researchItems = feedDigestItems.filter((i) => i.category === "research");
   const industryItems = feedDigestItems.filter((i) => i.category === "industry");
   const thoughtLeaderItems = feedDigestItems.filter((i) => i.category === "thought-leader");
   const chineseItems = feedDigestItems.filter((i) => i.category === "chinese");
 
-  // 7. Editor note（失败兜底：允许空编辑语，不阻塞日报产出）
-  console.log("[digest] Generating editor note...");
-  let editorNote = "";
-  try {
-    editorNote = await generateEditorNote(hotRanking, pmHighlights);
-  } catch (err) {
-    console.warn("[digest] Editor note failed, continuing without it:", err);
+  // Guard: 全部条目为空（多为 LLM API 整体失败）则直接失败，
+  // 保留上一版线上站点，避免空日报覆盖
+  if (hotRanking.length + githubNewItems.length + githubHotItems.length +
+      researchItems.length + industryItems.length + thoughtLeaderItems.length + chineseItems.length === 0) {
+    console.error("[digest] All sections empty — aborting to protect the live site (check API key/billing)");
+    process.exit(1);
   }
+
+  // 7. Editor note
+  console.log("[digest] Generating editor note...");
+  const editorNote = await generateEditorNote(hotRanking, pmHighlights);
 
   const digest: DailyDigest = {
     date: dateStr,
@@ -334,7 +295,7 @@ async function main() {
     fs.writeFileSync(indexPath, JSON.stringify(index, null, 2), "utf-8");
   }
 
-  console.log(`[digest] Done! Saved to ${outputPath}`);
+  console.log(`[digest] ✅ Done! Saved to ${outputPath}`);
   console.log(`[digest] Hot ranking: ${hotRanking.length} | PM highlights: ${pmHighlights.length}`);
   console.log(`[digest] GitHub new: ${githubNewItems.length} | hot: ${githubHotItems.length}`);
   console.log(`[digest] Feeds: ${feedDigestItems.length} total`);
