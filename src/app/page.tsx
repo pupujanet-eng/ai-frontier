@@ -1,4 +1,4 @@
-import { DailyDigest } from "@/types";
+import { DailyDigest, TrendTopic } from "@/types";
 import { DigestView } from "@/components/DigestView";
 import { promises as fs } from "fs";
 import path from "path";
@@ -11,6 +11,18 @@ async function getLatestDigest(): Promise<DailyDigest | null> {
   } catch {
     return null;
   }
+}
+
+async function getTopics(digest: DailyDigest) {
+  // Editorial briefings are explicitly dated, independent of generated news.
+  // Only show them in the current trend window; do not pin an old launch forever.
+  const files = await fs.readdir(path.join(process.cwd(), "data/briefings")).catch(() => []);
+  const briefings = await Promise.all(files.filter((f) => f.endsWith(".json")).map(async (file) =>
+    JSON.parse(await fs.readFile(path.join(process.cwd(), "data/briefings", file), "utf8")) as TrendTopic
+  ));
+  const now = Date.now();
+  const current = briefings.filter((b) => { const age = now - Date.parse(b.updatedAt); return age >= 0 && age <= 14 * 86400000; });
+  return [...new Map([...current, ...(digest.topics ?? [])].map((t) => [t.id, t])).values()];
 }
 
 export default async function Home() {
@@ -33,5 +45,6 @@ export default async function Home() {
     );
   }
 
-  return <DigestView digest={digest} />;
+  const topics = await getTopics(digest);
+  return <DigestView digest={{ ...digest, topics }} />;
 }

@@ -45,6 +45,7 @@ export async function fetchGitHubTrending(
   const url = `https://github.com/trending${language ? `/${language}` : ""}?since=${since}&spoken_language_code=en`;
 
   const res = await fetch(url, {
+    signal: AbortSignal.timeout(15000),
     headers: {
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
       Accept: "text/html",
@@ -103,7 +104,7 @@ export async function fetchGitHubTrending(
       });
 
       // Mark as seen
-      if (isNew) seen[fullName] = today;
+      seen[fullName] = today;
     }
   });
 
@@ -124,6 +125,6 @@ export function filterAIRepos(repos: GitHubRepo[]): GitHubRepo[] {
 
   return repos.filter((repo) => {
     const text = `${repo.name} ${repo.description}`.toLowerCase();
-    return aiKeywords.some((kw) => text.includes(kw));
+    return aiKeywords.some((kw) => kw.length <= 3 ? new RegExp(`(^|[^a-z])${kw}([^a-z]|$)`, "i").test(text) : text.includes(kw));
   });
 }

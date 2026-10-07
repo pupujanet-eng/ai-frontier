@@ -1,12 +1,12 @@
-name: Deploy Next.js site to Pages
+name: Daily Digest + Deploy
 
 on:
   schedule:
-    - cron: "0 0 * * *"   # 每天 UTC 00:00 = 北京时间 08:00
+    - cron: "0 0 * * *" # 北京时间 08:00
   workflow_dispatch:
     inputs:
       skip_generate:
-        description: "跳过生成，直接用仓库内已有数据构建（API 故障时应急恢复站点用）"
+        description: "跳过生成，使用最近保存的日报构建"
         type: boolean
         default: false
   push:
@@ -18,55 +18,33 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: true
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Detect package manager
-        id: detect-package-manager
-        run: |
-          if [ -f "${{ github.workspace }}/yarn.lock" ]; then
-            echo "manager=yarn" >> $GITHUB_OUTPUT
-            echo "command=install" >> $GITHUB_OUTPUT
-            echo "runner=yarn" >> $GITHUB_OUTPUT
-            exit 0
-          elif [ -f "${{ github.workspace }}/package.json" ]; then
-            echo "manager=npm" >> $GITHUB_OUTPUT
-            echo "command=ci" >> $GITHUB_OUTPUT
-            echo "runner=npx --no-install" >> $GITHUB_OUTPUT
-            exit 0
-          else
-            echo "Unable to determine package manager"
-            exit 1
-          fi
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: ${{ steps.detect-package-manager.outputs.manager }}
-
+          cache: npm
       - name: Install dependencies
-        timeout-minutes: 15
+        run: npm ci --no-audit --no-fund
+      - name: Validate code and editorial data
         run: |
-          echo "npm before: $(npm --version)"
-          npm install -g npm@latest --no-fund
-          echo "npm after: $(npm --version)"
-          for attempt in 1 2 3; do
-            echo "=== Install attempt $attempt ==="
-            timeout 240 ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }} --no-audit --no-fund && exit 0
-            echo "::warning::Install did not succeed, retrying..."
-            sleep 3
-          done
-          echo "::error::Install failed after 3 attempts"
-          exit 1
-
+          npm test
+          npm run lint
+          npx tsc --noEmit
+      - name: Restore recent editions and GitHub history
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/digests
+            data/github-seen.json
+          key: digest-v2-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: digest-v2-
       - name: Generate daily digest
         if: ${{ !inputs.skip_generate }}
         timeout-minutes: 40
@@ -75,27 +53,32 @@ jobs:
           CLASSIFY_MODEL: ${{ vars.CLASSIFY_MODEL || '' }}
           EDITOR_MODEL: ${{ vars.EDITOR_MODEL || '' }}
         run: npm run generate
-
+      - name: Save verified editions
+        if: ${{ !inputs.skip_generate }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            data/digests
+            data/github-seen.json
+          key: digest-v2-${{ github.run_id }}-${{ github.run_attempt }}
       - name: Setup Pages
         uses: actions/configure-pages@v5
+      - name: Build static site
+        env:
+          NEXT_PUBLIC_BASE_PATH: /ai-frontier
+        run: npm run build
+      - name: Archive generated data
+        uses: actions/upload-artifact@v4
         with:
-          static_site_generator: next
-
-      - name: Restore cache
-        uses: actions/cache@v4
-        with:
-          path: .next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
-          restore-keys: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
-
-      - name: Build with Next.js
-        run: ${{ steps.detect-package-manager.outputs.runner }} next build
-
-      - name: Upload artifact
+          name: digest-data-${{ github.run_id }}
+          path: |
+            data/digests
+            data/github-seen.json
+          retention-days: 90
+      - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./out
-
   deploy:
     environment:
       name: github-pages
@@ -105,4 +88,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@v4

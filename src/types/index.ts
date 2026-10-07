@@ -1,5 +1,11 @@
 export interface DigestItem {
   id: string;
+  publishedAt?: string;
+  sourceKind?: SourceKind;
+  evidenceQuality?: "substantial" | "limited";
+  layers?: KnowledgeLayer[];
+  whyItMatters?: string;
+  limitations?: string;
   title: string;
   titleZh: string;
   summary: string;
@@ -21,6 +27,9 @@ export interface DigestItem {
 export interface DailyDigest {
   date: string;
   dateZh: string;
+  schemaVersion?: number;
+  topics?: TrendTopic[];
+  coverage?: { fetchedAt: string; lookbackDays: number; sources: FeedHealth[]; selected: number; published: number; warnings: string[] };
   // global top 10 by importance, regardless of project relevance
   hotRanking: DigestItem[];
   // subset of hotRanking items that relate to user's 3 projects
@@ -36,4 +45,41 @@ export interface DailyDigest {
   // legacy, kept for compatibility during transition
   highlights: DigestItem[];
   github: DigestItem[];
+}
+
+export type KnowledgeLayer = "models" | "infrastructure" | "agents" | "products" | "business" | "governance";
+export type SourceKind = "primary" | "reporting" | "analysis" | "community";
+export interface TopicSource {
+  id: string;
+  title: string;
+  url: string;
+  source: string;
+  kind: SourceKind;
+  publishedAt?: string;
+}
+export interface TopicSection {
+  heading: string;
+  body: string;
+  sourceIds: string[];
+  kind: "fact" | "analysis" | "uncertainty";
+}
+export interface TrendTopic {
+  id: string;
+  title: string;
+  thesis: string;
+  whyNow: string;
+  layers: KnowledgeLayer[];
+  sections: TopicSection[];
+  sources: TopicSource[];
+  watchNext: string[];
+  updatedAt: string;
+  origin: "generated" | "curated";
+}
+export interface FeedHealth {
+  source: string;
+  url: string;
+  status: "ok" | "empty" | "error";
+  items: number;
+  undated: number;
+  error?: string;
 }
