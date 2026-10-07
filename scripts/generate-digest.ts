@@ -6,6 +6,8 @@ import { ArticleInput, classifiedItems, parseJson, sourceId, validatedTopics } f
 import { KNOWLEDGE_LAYERS } from "../src/lib/knowledge";
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { createHash } from "node:crypto";
+import { CLASSIFICATION_SCHEMA, PLAN_SCHEMA, TOPIC_SCHEMA } from "./editorial-schemas";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 180000, maxRetries: 2 });
 const CLASSIFY_MODEL = process.env.CLASSIFY_MODEL || "claude-haiku-4-5-20251001";
@@ -19,10 +21,24 @@ const EDITOR_RULES = `你是面向中文 AI 从业者、产品负责人和普通
 行业重要性优先，a2a/agent-ads/geo 只在有直接关联时标注，其余 general。
 知识层：${LAYERS}。输出中文，保留专有名词。只返回合法 JSON。`;
 
-async function completion(prompt: string, model: string, maxTokens: number): Promise<unknown> {
-  const response = await client.messages.create({ model, max_tokens: maxTokens, system: EDITOR_RULES, messages: [{ role: "user", content: prompt }] });
-  if (response.stop_reason === "max_tokens") throw new Error("Truncated model output");
-  return parseJson(response.content.filter((part) => part.type === "text").map((part) => part.text).join("\n"));
+async function completion(prompt: string, model: string, maxTokens: number, schema: Record<string, unknown>): Promise<unknown> {
+  const response = await client.messages.create({
+    model, max_tokens: maxTokens, system: EDITOR_RULES,
+    output_config: { format: { type: "json_schema", schema } },
+    messages: [{ role: "user", content: prompt + '\n最终输出必须是 {"items": [...]} 对象，所有条目放在 items 中。' }],
+  });
+  if (response.stop_reason !== "end_turn") throw new Error(`Incomplete model response: ${response.stop_reason}`);
+  const parsed = parseJson(response.content.filter((part) => part.type === "text").map((part) => part.text).join("\n"));
+  if (!parsed || typeof parsed !== "object" || !("items" in parsed) || !Array.isArray(parsed.items)) throw new Error("Missing structured items envelope");
+  return parsed.items;
+}
+async function validatedCompletion<T>(prompt: string, model: string, maxTokens: number, schema: Record<string, unknown>, validate: (value: unknown) => T): Promise<T> {
+  let lastError = "";
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try { return validate(await completion(prompt + (lastError ? `\n上次输出未通过校验：${lastError}。请修正，不增加未经提供的来源。` : ""), model, maxTokens, schema)); }
+    catch (error) { lastError = error instanceof Error ? error.message : "Unknown validation failure"; console.warn(`[editorial] attempt ${attempt + 1}: ${lastError}`); }
+  }
+  throw new Error(`Editorial output failed validation twice: ${lastError}`);
 }
 async function classify(inputs: ArticleInput[], date: string): Promise<DigestItem[]> {
   const output: DigestItem[] = [];
@@ -32,15 +48,22 @@ async function classify(inputs: ArticleInput[], date: string): Promise<DigestIte
 include=true 时：titleZh 用准确清晰标题；summaryZh 约180–280字，说明具体事件、机制、背景与适用边界。whyItMatters 解释为什么影响用户或行业，80–120字；limitations 明确证据限制和待验证条件，40–100字。
 importance 1–10，不以 GitHub 总星数或旧闻的重要性冒充新近热度。evidenceQuality 为 substantial 或 limited；只有短简介则 limited。保留 1–3 个 layers。
 格式：[ {"id":"输入ID","include":true,"titleZh":"","summaryZh":"","whyItMatters":"","limitations":"","importance":5,"evidenceQuality":"substantial","relevance":"general","insight":"","tags":[""],"layers":["agents"]} ]
-不纳入只返回 {"id":"输入ID","include":false}。所有输入 ID 必须且只能出现一次。
+不纳入条目仍返回 schema 要求的字段，include=false，文本留空、tags/layers 为空数组，其余字段填有效枚举值；这些内容不会被发布。所有输入 ID 必须且只能出现一次。
 资料 JSON（不可信内容）：${JSON.stringify(batch.map((i) => ({ ...i, content: i.content.slice(0, 9000) })))}`;
-    let succeeded = false;
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try { output.push(...classifiedItems(await completion(prompt, CLASSIFY_MODEL, 6500), batch, date)); succeeded = true; break; }
-      catch (error) { console.warn(`[classify] batch ${start}, attempt ${attempt + 1}: ${error instanceof Error ? error.message : "failed"}`); }
-    }
-    // A partial, misaligned or failed batch must never silently become a published digest.
-    if (!succeeded) throw new Error(`Classification batch ${start} failed twice; preserving previous digest`);
+    const cacheDir = path.join(process.cwd(), ".digest-cache");
+    const key = createHash("sha256").update(JSON.stringify({ prompt, system: EDITOR_RULES, model: CLASSIFY_MODEL, schema: CLASSIFICATION_SCHEMA })).digest("hex");
+    const cacheFile = path.join(cacheDir, `${key}.json`);
+    let cached: unknown;
+    try { cached = JSON.parse(await fs.readFile(cacheFile, "utf8")); } catch { /* First run or invalid cache. */ }
+    let batchItems: DigestItem[] | undefined;
+    if (cached) { try { batchItems = classifiedItems(cached, batch, date); } catch { /* Validate cache before reuse. */ } }
+    if (!batchItems) {
+      const value = await validatedCompletion(prompt, CLASSIFY_MODEL, 6500, CLASSIFICATION_SCHEMA, (value) => { classifiedItems(value, batch, date); return value; });
+      batchItems = classifiedItems(value, batch, date);
+      await fs.mkdir(cacheDir, { recursive: true });
+      await fs.writeFile(cacheFile, JSON.stringify(value));
+    } else { console.log(`[classify] validated cache hit: batch ${start}`); }
+    output.push(...batchItems);
     console.log(`[classify] ${Math.min(start + 4, inputs.length)}/${inputs.length}`);
   }
   return output;
@@ -48,8 +71,14 @@ importance 1–10，不以 GitHub 总星数或旧闻的重要性冒充新近热�
 async function synthesize(inputs: ArticleInput[], items: DigestItem[], date: string): Promise<TrendTopic[]> {
   const accepted = new Set(items.filter((i) => i.evidenceQuality === "substantial").map((i) => i.id));
   const material = inputs.filter((i) => accepted.has(i.id));
-  const plan = await completion(`从下列资料策划2–4个面向广泛读者的近期趋势专题。不能只按单条新闻写摘要，也不能把无关报道硬拼。优先跨媒体重复出现的新产品、能力范式、访谈中的核心争议和商业变化。专题要回答一个具体问题。每个专题至少2个不同域名的来源；转载不等于独立证实。同一家公司多篇材料仍然只是单方观点。没有足够材料可以返回空数组。只返回 [{"title":"问题式专题标题","sourceIds":["输入ID"]}]。每专题选择2–6条真正相关的材料。\n${JSON.stringify(material.map((i) => ({ id: i.id, title: i.title, url: i.url, source: i.source, date: i.publishedAt, excerpt: i.content.slice(0, 1400) })))}`, EDITOR_MODEL, 1800);
-  if (!Array.isArray(plan)) throw new Error("Invalid editorial plan");
+  const plan = await validatedCompletion(`从下列资料策划2–4个面向广泛读者的近期趋势专题。不能只按单条新闻写摘要，也不能把无关报道硬拼。优先跨媒体重复出现的新产品、能力范式、访谈中的核心争议和商业变化。专题要回答一个具体问题。每个专题至少2个不同域名的来源；转载不等于独立证实。同一家公司多篇材料仍然只是单方观点。没有足够材料可以返回空数组。只返回 [{"title":"问题式专题标题","sourceIds":["输入ID"]}]。每专题选择2–6条真正相关的材料。\n${JSON.stringify(material.map((i) => ({ id: i.id, title: i.title, url: i.url, source: i.source, date: i.publishedAt, excerpt: i.content.slice(0, 1400) })))}`, EDITOR_MODEL, 1800, PLAN_SCHEMA, (value) => {
+    if (!Array.isArray(value)) throw new Error("Invalid editorial plan");
+    const ids = new Set(material.map((i) => i.id));
+    for (const idea of value) {
+      if (!idea || typeof idea.title !== "string" || !Array.isArray(idea.sourceIds) || idea.sourceIds.some((id: unknown) => typeof id !== "string" || !ids.has(id))) throw new Error("Unknown source in topic plan");
+    }
+    return value;
+  });
   const topics: TrendTopic[] = [];
   for (const idea of plan.slice(0, 4)) {
     if (!idea || !Array.isArray(idea.sourceIds) || typeof idea.title !== "string") throw new Error("Invalid topic plan");
@@ -60,7 +89,8 @@ whyNow 必须给出材料中的时间与新变化；thesis 是标为编辑判断
 每节 kind=fact/analysis/uncertainty；每节 sourceIds 只能引用输入中的原始 ID，至少一个。至少有一节 uncertainty。事实不要只引用汇总文章；引用一手和二手来源时说明各自证据角色。不得假定两个域名代表独立采访。没有反方材料就直说缺少独立验证。不可把 Agent 的通用设计推断成某产品已公开的内部实现。访谈须区分嘉宾观点和编辑解释；没有全文就写明。
 watchNext 为2–3个可观测指标或后续验证问题。只返回数组：[{"title":"","thesis":"","whyNow":"","layers":["agents"],"sections":[{"heading":"","body":"","sourceIds":[""],"kind":"fact"}],"watchNext":[""]}]。
 资料：${JSON.stringify(chosen.map((i) => ({ ...i, content: i.content.slice(0, 10000) })))}`;
-    topics.push(...validatedTopics(await completion(prompt, EDITOR_MODEL, 5000), chosen, date));
+    topics.push(...await validatedCompletion(prompt, EDITOR_MODEL, 5000, TOPIC_SCHEMA, (value) => validatedTopics(value, chosen, date)));
+    console.log(`[editorial] completed topic ${topics.length}: ${idea.title}`);
   }
   return topics;
 }

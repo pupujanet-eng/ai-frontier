@@ -45,6 +45,12 @@ jobs:
             data/github-seen.json
           key: digest-v2-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: digest-v2-
+      - name: Restore validated model checkpoints
+        uses: actions/cache/restore@v4
+        with:
+          path: .digest-cache
+          key: model-checkpoints-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: model-checkpoints-v1-
       - name: Generate daily digest
         if: ${{ !inputs.skip_generate }}
         timeout-minutes: 40
@@ -53,6 +59,12 @@ jobs:
           CLASSIFY_MODEL: ${{ vars.CLASSIFY_MODEL || '' }}
           EDITOR_MODEL: ${{ vars.EDITOR_MODEL || '' }}
         run: npm run generate
+      - name: Save validated model checkpoints
+        if: ${{ always() && !inputs.skip_generate }}
+        uses: actions/cache/save@v4
+        with:
+          path: .digest-cache
+          key: model-checkpoints-v1-${{ github.run_id }}-${{ github.run_attempt }}
       - name: Save verified editions
         if: ${{ !inputs.skip_generate }}
         uses: actions/cache/save@v4
