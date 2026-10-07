@@ -164,7 +164,7 @@ export async function fetchAllFeeds(now = new Date()): Promise<{ items: FeedItem
     try {
       const data = feed.source === "Anthropic News"
         ? await fetchAnthropicNews()
-        : await parser.parseURL(feed.url);
+        : await fetchFeed(feed.url);
       const cutoff = now.getTime() - feed.lookbackDays * 86400000;
       const items = data.items.flatMap((item): FeedItem[] => {
         const rawDate = item.isoDate || item.pubDate;
@@ -267,4 +267,24 @@ async function fetchAnthropicNews() {
     items.push({ title, link: new URL(anchor.attr("href")!, "https://www.anthropic.com").href, pubDate: date + " 00:00:00 GMT", contentSnippet: title });
   });
   return { items };
+}
+
+async function fetchFeed(url: string) {
+  // rss-parser's parseURL timeout rejects without destroying the underlying
+  // request. A stalled publisher can otherwise keep the whole CI job alive.
+  const response = await fetch(url, { signal: AbortSignal.timeout(15000), headers: { "User-Agent": "AI-Frontier-Digest/2.0" } });
+  if (!response.ok) { await response.body?.cancel(); throw new Error(`Feed HTTP ${response.status}`); }
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error("Empty feed response");
+  const chunks: Uint8Array[] = []; let bytes = 0;
+  try {
+    while (true) {
+      const part = await reader.read();
+      if (part.done) break;
+      bytes += part.value.length;
+      if (bytes > 5000000) throw new Error("Feed exceeds size limit");
+      chunks.push(part.value);
+    }
+  } finally { await reader.cancel(); }
+  return parser.parseString(Buffer.concat(chunks).toString("utf8"));
 }

@@ -5,4 +5,4 @@ console.table(health.map((h) => ({ source: h.source, status: h.status, items: h.
 console.log(`Selected ${selectFeedItems(items).length} items across ${new Set(selectFeedItems(items).map((i) => i.source)).size} sources`);
 
 }
-main().catch(() => { process.exitCode = 1; });
+main().then(() => process.exit(0)).catch(() => { process.exit(1); });

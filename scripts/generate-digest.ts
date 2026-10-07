@@ -105,4 +105,4 @@ async function main() {
   for (const old of dates.slice(90)) await fs.unlink(path.join(dir, `${old}.json`));
   console.log(`[digest] Published ${items.length} items, ${topics.length} topics for ${date}`);
 }
-main().catch((error) => { console.error("[digest] Failed:", error instanceof Error ? error.message : "Unknown error"); process.exitCode = 1; });
+main().then(() => process.exit(0)).catch((error) => { console.error("[digest] Failed:", error instanceof Error ? error.message : "Unknown error"); process.exit(1); });
