@@ -41,9 +41,7 @@ async function validatedCompletion<T>(prompt: string, model: string, maxTokens: 
   throw new Error(`Editorial output failed validation twice: ${lastError}`);
 }
 async function classify(inputs: ArticleInput[], date: string): Promise<DigestItem[]> {
-  const output: DigestItem[] = [];
-  for (let start = 0; start < inputs.length; start += 4) {
-    const batch = inputs.slice(start, start + 4);
+  async function classifyBatch(batch: ArticleInput[]): Promise<DigestItem[]> {
     const prompt = `逐条分析资料。每条必须返回原始 id，不依赖数组顺序。与 AI 无直接关联、只有空泛标题或证据不足以概括的条目 include=false，不凑数。
 include=true 时：titleZh 用准确清晰标题；summaryZh 约180–280字，说明具体事件、机制、背景与适用边界。whyItMatters 解释为什么影响用户或行业，80–120字；limitations 明确证据限制和待验证条件，40–100字。
 importance 1–10，不以 GitHub 总星数或旧闻的重要性冒充新近热度。evidenceQuality 为 substantial 或 limited；只有短简介则 limited。保留 1–3 个 layers。
@@ -58,12 +56,25 @@ importance 1–10，不以 GitHub 总星数或旧闻的重要性冒充新近热�
     let batchItems: DigestItem[] | undefined;
     if (cached) { try { batchItems = classifiedItems(cached, batch, date); } catch { /* Validate cache before reuse. */ } }
     if (!batchItems) {
-      const value = await validatedCompletion(prompt, CLASSIFY_MODEL, 6500, CLASSIFICATION_SCHEMA, (value) => { classifiedItems(value, batch, date); return value; });
+      let value: unknown;
+      try {
+        value = await validatedCompletion(prompt, CLASSIFY_MODEL, 6500, CLASSIFICATION_SCHEMA, (value) => { classifiedItems(value, batch, date); return value; });
+      } catch (error) {
+        if (batch.length === 1) throw error;
+        console.warn(`[classify] retrying ${batch.length} articles individually after batch validation failure`);
+        const recovered: DigestItem[] = [];
+        for (const article of batch) recovered.push(...await classifyBatch([article]));
+        return recovered;
+      }
       batchItems = classifiedItems(value, batch, date);
       await fs.mkdir(cacheDir, { recursive: true });
       await fs.writeFile(cacheFile, JSON.stringify(value));
-    } else { console.log(`[classify] validated cache hit: batch ${start}`); }
-    output.push(...batchItems);
+    } else { console.log(`[classify] validated cache hit: ${batch.length} articles`); }
+    return batchItems;
+  }
+  const output: DigestItem[] = [];
+  for (let start = 0; start < inputs.length; start += 4) {
+    output.push(...await classifyBatch(inputs.slice(start, start + 4)));
     console.log(`[classify] ${Math.min(start + 4, inputs.length)}/${inputs.length}`);
   }
   return output;
