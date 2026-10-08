@@ -7,7 +7,8 @@ import { KNOWLEDGE_LAYERS } from "../src/lib/knowledge";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
-import { CLASSIFICATION_SCHEMA, PLAN_SCHEMA, TOPIC_SCHEMA } from "./editorial-schemas";
+import { editorialJudgment, isCompleteTopic } from "../src/lib/editorial-quality";
+import { CLASSIFICATION_SCHEMA, PLAN_SCHEMA, TOPIC_SCHEMA, withSourceIds } from "./editorial-schemas";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 180000, maxRetries: 2 });
 const CLASSIFY_MODEL = process.env.CLASSIFY_MODEL || "claude-haiku-4-5-20251001";
@@ -79,10 +80,11 @@ importance 1–10，不以 GitHub 总星数或旧闻的重要性冒充新近热�
   }
   return output;
 }
-async function synthesize(inputs: ArticleInput[], items: DigestItem[], date: string): Promise<TrendTopic[]> {
+async function synthesize(inputs: ArticleInput[], items: DigestItem[], date: string, warnings: string[]): Promise<TrendTopic[]> {
   const accepted = new Set(items.filter((i) => i.evidenceQuality === "substantial").map((i) => i.id));
   const material = inputs.filter((i) => accepted.has(i.id));
-  const plan = await validatedCompletion(`从下列资料策划2–4个面向广泛读者的近期趋势专题。不能只按单条新闻写摘要，也不能把无关报道硬拼。优先跨媒体重复出现的新产品、能力范式、访谈中的核心争议和商业变化。专题要回答一个具体问题。每个专题至少2个不同域名的来源；转载不等于独立证实。同一家公司多篇材料仍然只是单方观点。没有足够材料可以返回空数组。只返回 [{"title":"问题式专题标题","sourceIds":["输入ID"]}]。每专题选择2–6条真正相关的材料。\n${JSON.stringify(material.map((i) => ({ id: i.id, title: i.title, url: i.url, source: i.source, date: i.publishedAt, excerpt: i.content.slice(0, 1400) })))}`, EDITOR_MODEL, 1800, PLAN_SCHEMA, (value) => {
+  if (material.length < 2) return [];
+  const plan = await validatedCompletion(`从下列资料策划2–4个面向广泛读者的近期趋势专题。不能只按单条新闻写摘要，也不能把无关报道硬拼。优先跨媒体重复出现的新产品、能力范式、访谈中的核心争议和商业变化。专题要回答一个具体问题。每个专题至少2个不同域名的来源；转载不等于独立证实。同一家公司多篇材料仍然只是单方观点。没有足够材料可以返回空数组。只返回 [{"title":"问题式专题标题","sourceIds":["输入ID"]}]。每专题选择2–6条真正相关的材料。\n${JSON.stringify(material.map((i) => ({ id: i.id, title: i.title, url: i.url, source: i.source, date: i.publishedAt, excerpt: i.content.slice(0, 1400) })))}`, EDITOR_MODEL, 1800, withSourceIds(PLAN_SCHEMA, material.map((i) => i.id)), (value) => {
     if (!Array.isArray(value)) throw new Error("Invalid editorial plan");
     const ids = new Set(material.map((i) => i.id));
     for (const idea of value) {
@@ -100,8 +102,18 @@ whyNow 必须给出材料中的时间与新变化；thesis 是标为编辑判断
 每节 kind=fact/analysis/uncertainty；每节 sourceIds 只能引用输入中的原始 ID，至少一个。至少有一节 uncertainty。事实不要只引用汇总文章；引用一手和二手来源时说明各自证据角色。不得假定两个域名代表独立采访。没有反方材料就直说缺少独立验证。不可把 Agent 的通用设计推断成某产品已公开的内部实现。访谈须区分嘉宾观点和编辑解释；没有全文就写明。
 watchNext 为2–3个可观测指标或后续验证问题。只返回数组：[{"title":"","thesis":"","whyNow":"","layers":["agents"],"sections":[{"heading":"","body":"","sourceIds":[""],"kind":"fact"}],"watchNext":[""]}]。
 资料：${JSON.stringify(chosen.map((i) => ({ ...i, content: i.content.slice(0, 10000) })))}`;
-    topics.push(...await validatedCompletion(prompt, EDITOR_MODEL, 5000, TOPIC_SCHEMA, (value) => validatedTopics(value, chosen, date)));
-    console.log(`[editorial] completed topic ${topics.length}: ${idea.title}`);
+    try {
+      const generated = await validatedCompletion(prompt, EDITOR_MODEL, 6500, withSourceIds(TOPIC_SCHEMA, chosen.map((i) => i.id)), (value) => {
+        const checked = validatedTopics(value, chosen, date);
+        if (checked.length !== 1 || !checked.every(isCompleteTopic)) throw new Error("Topic prose must contain complete sentences and substantial sections; do not cut any field mid-sentence");
+        return checked.map((topic) => ({ ...topic, thesis: editorialJudgment(topic.thesis) }));
+      });
+      topics.push(...generated);
+      console.log(`[editorial] completed topic ${topics.length}: ${idea.title}`);
+    } catch (error) {
+      warnings.push(`专题「${idea.title}」未通过内容校验，本期未刊出`);
+      console.warn(`[editorial] withheld topic: ${error instanceof Error ? error.message : "validation failed"}`);
+    }
   }
   return topics;
 }
@@ -122,7 +134,7 @@ async function main() {
   const items = await classify(unique, date);
   if (items.length < 8) throw new Error("Fewer than eight grounded AI items; keeping previous edition");
   if (!items.some((i) => i.sourceKind === "primary")) warnings.push("本期缺少可用一手资料，产品与性能主张需进一步核查");
-  const topics = await synthesize(unique, items, date);
+  const topics = await synthesize(unique, items, date, warnings);
   if (!topics.length) warnings.push("本期跨来源材料不足，未自动生成趋势专题");
   const hotRanking = items.filter((i) => i.evidenceQuality === "substantial" && i.publishedAt && now.getTime() - Date.parse(i.publishedAt) <= 7 * 86400000)
     .sort((a,b) => b.importance - a.importance || (b.publishedAt ?? "").localeCompare(a.publishedAt ?? "")).slice(0, 10);

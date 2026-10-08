@@ -1,3 +1,4 @@
+import { editorialJudgment, isCompleteTopic } from "@/lib/editorial-quality";
 import { DailyDigest, TrendTopic } from "@/types";
 import { DigestView } from "@/components/DigestView";
 import { promises as fs } from "fs";
@@ -46,5 +47,9 @@ export default async function Home() {
   }
 
   const topics = await getTopics(digest);
-  return <DigestView digest={{ ...digest, topics }} />;
+  const completeTopics = topics.filter(isCompleteTopic).map((topic) => ({ ...topic, thesis: editorialJudgment(topic.thesis) }));
+  const withheld = topics.length - completeTopics.length;
+  const editorNote = digest.topics?.length ? completeTopics.map((topic) => `**${topic.title}**\n\n编辑判断：${topic.thesis} [查看主要来源](${topic.sources[0].url})`).join("\n\n") : digest.editorNote;
+  const coverage = digest.coverage && { ...digest.coverage, warnings: [...digest.coverage.warnings, ...(withheld ? [`${withheld} 篇专题正文不完整，已暂不展示`] : [])] };
+  return <DigestView digest={{ ...digest, topics: completeTopics, editorNote, coverage }} />;
 }

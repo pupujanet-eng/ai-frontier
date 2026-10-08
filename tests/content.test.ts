@@ -72,3 +72,20 @@ test("curated Dots briefing has complete source and knowledge references", () =>
   const evidence = value.sources.map((s: {id:string;title:string;url:string;source:string;kind:string}) => ({...s,content:"Curated research",category:"industry"}));
   assert.equal(validatedTopics([value], evidence, value.updatedAt).length, 1);
 });
+
+
+import { editorialJudgment, isCompleteTopic } from "../src/lib/editorial-quality";
+import { TOPIC_SCHEMA, withSourceIds } from "../scripts/editorial-schemas";
+test("valid JSON with mid-sentence editorial prose is withheld", () => {
+  const complete = JSON.parse(readFileSync("data/briefings/dots.json", "utf8"));
+  assert.equal(isCompleteTopic(complete), true);
+  assert.equal(isCompleteTopic({ ...complete, thesis: "前沿AI模型正以分级授权方式向网络防御者开放，这一趋势客观上压缩了" }), false);
+  assert.equal(isCompleteTopic({ ...complete, sections: complete.sections.map((s: {body: string}) => ({...s, body: "未完成的句子"})) }), false);
+  assert.equal(editorialJudgment("（编辑判断）编辑判断：完整判断。"), "完整判断。");
+});
+test("source constraints do not mutate the shared schema", () => {
+  const original = JSON.stringify(TOPIC_SCHEMA);
+  const constrained = JSON.stringify(withSourceIds(TOPIC_SCHEMA, ["allowed-source"]));
+  assert.ok(constrained.includes('"enum":["allowed-source"]'));
+  assert.equal(JSON.stringify(TOPIC_SCHEMA), original);
+});

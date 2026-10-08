@@ -1,5 +1,5 @@
-// Keep the grammar stable between requests; dynamic article IDs are validated
-// against the input map after decoding, rather than recompiling a new grammar.
+// Classification IDs are validated against the input map after decoding.
+// Topic citations additionally receive an input-specific enum below.
 type Schema = Record<string, unknown>;
 const string: Schema = { type: "string" };
 const list = (items: Schema): Schema => ({ type: "array", items });
@@ -20,3 +20,17 @@ export const TOPIC_SCHEMA = envelope(object({
   sections: list(object({ heading: string, body: string, sourceIds: list(string), kind: choices("fact", "analysis", "uncertainty") })),
   watchNext: list(string),
 }));
+
+// Constrain citations during decoding as well as validating them after generation.
+export function withSourceIds(schema: Schema, ids: string[]): Schema {
+  const copy = structuredClone(schema);
+  function visit(value: unknown) {
+    if (!value || typeof value !== "object") return;
+    for (const [key, child] of Object.entries(value)) {
+      if (key === "sourceIds") (value as Schema)[key] = list({ type: "string", enum: ids });
+      else visit(child);
+    }
+  }
+  visit(copy);
+  return copy;
+}
