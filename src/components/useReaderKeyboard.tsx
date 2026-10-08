@@ -54,10 +54,10 @@ export function useReaderKeyboard(clearSearch: () => void, navigate: (id: string
   }, [clearSearch, navigate, sections]);
 }
 export function KeyboardHelp() {
-  return <dialog id="keyboard-help" className="rounded-2xl p-6 max-w-md w-[calc(100%-2rem)] shadow-xl backdrop:bg-black/25">
-    <h2 className="text-lg font-semibold mb-4">键盘阅读</h2>
-    <dl className="grid grid-cols-2 gap-3 text-sm text-stone-600">{[["j / k · ↑ / ↓", "下一条 / 上一条"], ["PageDown / PageUp", "下翻 / 上翻一屏"], ["空格 / Shift + 空格", "下翻 / 上翻一屏"], ["1–9", "跳到对应栏目"], ["/", "搜索资讯与专题"], ["Enter", "展开卡片详情或打开原文"], ["Esc", "退出搜索 / 关闭帮助"], ["?", "打开本帮助"]].map(([key, text]) => <div key={key} className="contents"><dt><kbd>{key}</kbd></dt><dd>{text}</dd></div>)}</dl>
-    <p className="text-xs text-stone-500 mt-5">输入文字、中文输入法选词时不触发快捷键。Tab 可依次访问链接和按钮。</p>
-    <form method="dialog" className="mt-5"><button className="bg-stone-900 text-white rounded-lg px-4 py-2 text-sm">关闭</button></form>
+  return <dialog id="keyboard-help" className="digest-dialog" aria-labelledby="keyboard-help-title">
+    <h2 id="keyboard-help-title" className="digest-card-title mb-4">键盘阅读</h2>
+    <dl className="digest-shortcuts">{[["j / k · ↑ / ↓", "下一条 / 上一条"], ["PageDown / PageUp", "下翻 / 上翻一屏"], ["空格 / Shift + 空格", "下翻 / 上翻一屏"], ["1–9", "跳到对应栏目"], ["/", "搜索资讯与专题"], ["Enter", "展开卡片详情或打开原文"], ["Esc", "退出搜索 / 关闭帮助"], ["?", "打开本帮助"]].map(([key, text]) => <div key={key} className="contents"><dt><kbd>{key}</kbd></dt><dd>{text}</dd></div>)}</dl>
+    <p className="digest-caption mt-5">输入文字、中文输入法选词时不触发快捷键。Tab 可依次访问链接和按钮。</p>
+    <form method="dialog" className="mt-5"><button className="digest-button">关闭</button></form>
   </dialog>;
 }
