@@ -24,6 +24,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      SKIP_GENERATE: ${{ inputs.skip_generate || (github.event_name == 'push' && contains(github.event.head_commit.message, '[deploy cached]')) }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -52,7 +54,7 @@ jobs:
           key: model-checkpoints-v1-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: model-checkpoints-v1-
       - name: Generate daily digest
-        if: ${{ !inputs.skip_generate }}
+        if: ${{ env.SKIP_GENERATE != 'true' }}
         timeout-minutes: 40
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -60,13 +62,13 @@ jobs:
           EDITOR_MODEL: ${{ vars.EDITOR_MODEL || '' }}
         run: npm run generate
       - name: Save validated model checkpoints
-        if: ${{ always() && !inputs.skip_generate }}
+        if: ${{ always() && env.SKIP_GENERATE != 'true' }}
         uses: actions/cache/save@v4
         with:
           path: .digest-cache
           key: model-checkpoints-v1-${{ github.run_id }}-${{ github.run_attempt }}
       - name: Save verified editions
-        if: ${{ !inputs.skip_generate }}
+        if: ${{ env.SKIP_GENERATE != 'true' }}
         uses: actions/cache/save@v4
         with:
           path: |

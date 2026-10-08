@@ -48,3 +48,6 @@ GitHub Settings → Secrets and variables → Actions 配置 `ANTHROPIC_API_KEY`
 推送 `main`、手动执行或北京时间每日 08:00 触发。部署使用 `NEXT_PUBLIC_BASE_PATH=/ai-frontier`；本地默认根路径。`skip_generate` 可用最近缓存数据重建界面，页面始终显示实际日报日期。
 
 生产发布前运行测试、Lint、TypeScript 与静态构建。日志及数据 artifact 可用于排查来源故障、生成错误和证据质量；API key 不写入站点或日志。
+
+
+仅修复界面或展示规则时，可手动运行工作流并勾选 `skip_generate`；也可在提交说明中加入 `[deploy cached]`，使用最近保存的日报重新构建部署，避免重复调用模型。正文完整性检查同时作用于生成和展示；单个专题反复校验失败时会暂不刊出，并在来源覆盖中说明。
