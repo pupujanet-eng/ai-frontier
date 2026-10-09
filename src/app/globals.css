@@ -146,3 +146,13 @@ section[tabindex="-1"]:focus-visible > .digest-section-heading h2 { text-decorat
 }
 @media (max-width: 479px) { .digest-section-note { display: none; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0s !important; animation: none !important; } }
+
+/* Core insights share the digest's type scale; warm emphasis is reserved for key facts. */
+.digest-editor-note mark { color: var(--text-primary); background: #F4E8B8; padding: 0 2px; border-radius: 3px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.digest-editor-note mark strong { font-weight: 600; }
+.core-takeaway { color: var(--text-secondary); }
+.core-priorities { display: grid; gap: 16px; margin: 16px 0; list-style: none; }
+.core-priorities li { min-width: 0; }
+.core-priorities h3 { margin-bottom: 4px; }
+.core-priorities p + p { margin-top: 4px; }
+.core-boundary { border-top: 1px solid var(--border-card); padding-top: 12px; }

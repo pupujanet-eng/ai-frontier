@@ -42,6 +42,7 @@ export interface DailyDigest {
   thoughtLeaders: DigestItem[];
   chinese: DigestItem[];
   editorNote: string;
+  coreInsight?: CoreInsight;
   // legacy, kept for compatibility during transition
   highlights: DigestItem[];
   github: DigestItem[];
@@ -82,4 +83,14 @@ export interface FeedHealth {
   items: number;
   undated: number;
   error?: string;
+}
+
+export interface CoreInsight {
+  date: string;
+  origin: "generated" | "curated";
+  takeaway: string;
+  highlights: string[];
+  points: { title: string; fact: string; meaning: string; watch: string; highlights: string[]; sourceIds: string[] }[];
+  boundary: string;
+  sources: TopicSource[];
 }

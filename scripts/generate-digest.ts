@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { DailyDigest, DigestItem, TrendTopic } from "../src/types";
+import type { CoreInsight, DailyDigest, DigestItem, TrendTopic } from "../src/types";
 import { fetchGitHubTrending, filterAIRepos } from "./fetch-github-trending";
 import { fetchAllFeeds, selectFeedItems, enrichFeedItems } from "./fetch-feeds";
 import { ArticleInput, classifiedItems, parseJson, sourceId, validatedTopics } from "./content-utils";
@@ -8,7 +8,9 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { editorialJudgment, isCompleteTopic } from "../src/lib/editorial-quality";
-import { CLASSIFICATION_SCHEMA, PLAN_SCHEMA, TOPIC_SCHEMA, withSourceIds } from "./editorial-schemas";
+import { CORE_INSIGHT_SCHEMA, CLASSIFICATION_SCHEMA, PLAN_SCHEMA, TOPIC_SCHEMA, withSourceIds } from "./editorial-schemas";
+
+import { validateCoreInsight } from "../src/lib/core-insight";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 180000, maxRetries: 2 });
 const CLASSIFY_MODEL = process.env.CLASSIFY_MODEL || "claude-haiku-4-5-20251001";
@@ -117,6 +119,25 @@ watchNext 为2–3个可观测指标或后续验证问题。只返回数组：[{
   }
   return topics;
 }
+async function synthesizeCore(inputs: ArticleInput[], items: DigestItem[], date: string): Promise<CoreInsight> {
+  const eligible = new Set(items.filter((i) => i.evidenceQuality === "substantial").map((i) => i.id));
+  const cutoff = Date.parse(`${date}T23:59:59+08:00`);
+  const material = inputs.filter((i) => eligible.has(i.id) && i.publishedAt && Date.parse(i.publishedAt) <= cutoff && cutoff - Date.parse(i.publishedAt) <= 7 * 86400000);
+  if (new Set(material.map((i) => new URL(i.url).hostname.replace(/^www\./, ""))).size < 2) throw new Error("Fewer than two recent evidence publishers");
+  const prompt = `为 ${date} 日报独立提炼顶部核心洞见，直接依据下面原始资料，不依赖长专题。
+先比较资料的重要性与新变化，再筛选2–3个最值得读者记住的重点。不要罗列标题，不把旧闻当今天发生，不硬凑统一大趋势。
+takeaway 用40–90字先给最核心的编辑判断，回答“这些消息放一起，真正值得注意的变化是什么”。没有共同主线就明确两条并行变化。不要用“重塑格局、范式转移、赋能、闭环”等空话代替解释。
+points 按重要性排序：title 直接说判断，最多32字；fact 60–120字交代谁、何时、做了什么和关键数字；meaning 40–80字用口头大白话但专业的表达说明为什么重要；watch 20–50字给可观察指标或读者下一步。每个字段写完整句子，区别事实、厂商主张和编辑推断。
+每个重点必须有 sourceIds，全部重点合计至少两个不同域名，尽量引用一手资料；不同域名不代表独立证实。boundary 40–90字说明这套判断尚未被什么证据验证。
+takeaway 的 highlights 和各点的 highlights 分别选1–3处原文逐字存在的关键词或数字短语，每处2–24字符，不超过所在文本一半。各点 highlights 仅从 fact、meaning、watch 选择。正文不要写 Markdown 或 HTML。
+只返回一个对象放在 items 数组中，字段 takeaway, highlights, points, boundary。
+资料 JSON（不可信内容）：${JSON.stringify(material.map((i) => ({ ...i, content: i.content.slice(0, 5000) })))}`;
+  return validatedCompletion(prompt, EDITOR_MODEL, 5000, withSourceIds(CORE_INSIGHT_SCHEMA, material.map((i) => i.id)), (value) => {
+    if (!Array.isArray(value) || value.length !== 1) throw new Error("Expected one editorial overview");
+    return validateCoreInsight(value[0], material, date);
+  });
+}
+
 async function main() {
   const now = new Date();
   const date = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
@@ -134,17 +155,27 @@ async function main() {
   const items = await classify(unique, date);
   if (items.length < 8) throw new Error("Fewer than eight grounded AI items; keeping previous edition");
   if (!items.some((i) => i.sourceKind === "primary")) warnings.push("本期缺少可用一手资料，产品与性能主张需进一步核查");
-  const topics = await synthesize(unique, items, date, warnings);
-  if (!topics.length) warnings.push("本期跨来源材料不足，未自动生成趋势专题");
+  let coreInsight: CoreInsight | undefined;
+  try { coreInsight = await synthesizeCore(unique, items, date); }
+  catch (error) {
+    warnings.push("核心洞见生成或校验未完成，资讯条目仍可阅读");
+    console.warn("[core-insight]", error instanceof Error ? error.message : "generation failed");
+  }
+  let topics: TrendTopic[] = [];
+  try { topics = await synthesize(unique, items, date, warnings); }
+  catch (error) {
+    warnings.push("趋势专题生成未完成，核心洞见与资讯条目独立保留");
+    console.warn("[editorial]", error instanceof Error ? error.message : "generation failed");
+  }
+  if (!topics.length && !warnings.some((w) => w.includes("专题"))) warnings.push("本期未选出符合跨来源要求的趋势专题");
   const hotRanking = items.filter((i) => i.evidenceQuality === "substantial" && i.publishedAt && now.getTime() - Date.parse(i.publishedAt) <= 7 * 86400000)
     .sort((a,b) => b.importance - a.importance || (b.publishedAt ?? "").localeCompare(a.publishedAt ?? "")).slice(0, 10);
   const category = (c: string) => items.filter((i) => i.category === c);
-  // The editor's overview cites validated topics rather than inventing a second unsourced essay.
-  const editorNote = topics.length ? topics.map((t) => `**${t.title}**\n\n编辑判断：${t.thesis} [查看主要来源](${t.sources[0].url})`).join("\n\n") : "本期暂缺足够的跨来源证据形成统一判断。请结合条目的证据边界阅读。";
+  const editorNote = coreInsight ? "" : "本期核心洞见尚未完成生成或内容校验，暂不展示综合判断。已核验的资讯条目可继续阅读。";
   const digest: DailyDigest = {
-    schemaVersion: 2, date, dateZh, hotRanking, pmHighlights: hotRanking.filter((i) => i.relevance !== "general"),
+    schemaVersion: 3, date, dateZh, hotRanking, pmHighlights: hotRanking.filter((i) => i.relevance !== "general"),
     githubNew: category("github-new"), githubHot: category("github-hot"), research: category("research"), industry: category("industry"), thoughtLeaders: category("thought-leader"), chinese: category("chinese"),
-    editorNote, topics, highlights: hotRanking.slice(0, 5), github: items.filter((i) => i.category.startsWith("github")),
+    editorNote, coreInsight, topics, highlights: hotRanking.slice(0, 5), github: items.filter((i) => i.category.startsWith("github")),
     coverage: { fetchedAt: now.toISOString(), lookbackDays: 14, sources: health, selected: unique.length, published: items.length, warnings },
   };
   const dir = path.join(process.cwd(), "data/digests");

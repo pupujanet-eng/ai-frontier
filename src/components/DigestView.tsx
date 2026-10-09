@@ -4,6 +4,7 @@ import { DailyDigest, DigestItem } from "@/types";
 import { useState, useEffect, useCallback } from "react";
 import { uniqueItems } from "@/lib/knowledge";
 import { ArticleDepth, Coverage, KnowledgeGraph, TopicCard, TrendSection } from "./ResearchSections";
+import { CoreInsight } from "./CoreInsight";
 import { SectionHeader } from "./SectionHeader";
 import { KeyboardHelp, useReaderKeyboard } from "./useReaderKeyboard";
 import ReactMarkdown, { Components } from "react-markdown";
@@ -673,14 +674,15 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
 
           {!q && <Coverage coverage={digest.coverage} />}
           {/* Editor Note */}
-          {!q && digest.editorNote && (
+          {!q && digest.coreInsight && <CoreInsight insight={digest.coreInsight} />}
+          {!q && !digest.coreInsight && digest.editorNote && (
             <div className="digest-editor-note mb-8 digest-card-padding">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-5 h-5 rounded-lg bg-amber-400 flex items-center justify-center">
                   <span className="text-[9px] font-bold text-white">✦</span>
                 </div>
                 <span className="text-[13px] font-semibold text-[#1A1A18]">本期洞见</span>
-                <span className="text-[11px] text-[#9A9A94] ml-1">· by Claude</span>
+                <span className="text-[11px] text-[#9A9A94] ml-1">· 编辑说明</span>
               </div>
               <div className="digest-body digest-editor-prose">
                 <ReactMarkdown components={mdComponents}>{digest.editorNote}</ReactMarkdown>

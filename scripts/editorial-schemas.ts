@@ -34,3 +34,8 @@ export function withSourceIds(schema: Schema, ids: string[]): Schema {
   visit(copy);
   return copy;
 }
+
+export const CORE_INSIGHT_SCHEMA = envelope(object({
+  takeaway: string, highlights: list(string), boundary: string,
+  points: list(object({ title: string, fact: string, meaning: string, watch: string, highlights: list(string), sourceIds: list(string) })),
+}));
