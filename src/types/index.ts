@@ -29,6 +29,8 @@ export interface DailyDigest {
   dateZh: string;
   schemaVersion?: number;
   topics?: TrendTopic[];
+  backgroundTopics?: TrendTopic[];
+  topicGeneration?: { status: "complete" | "partial" | "failed" | "insufficient"; attempted: number; published: number; failures: { title: string; reason: string }[] };
   coverage?: { fetchedAt: string; lookbackDays: number; sources: FeedHealth[]; selected: number; published: number; warnings: string[] };
   // global top 10 by importance, regardless of project relevance
   hotRanking: DigestItem[];

@@ -1,14 +1,14 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { CoreInsight, DailyDigest, DigestItem, TrendTopic } from "../src/types";
+import type { CoreInsight, DailyDigest, DigestItem } from "../src/types";
 import { fetchGitHubTrending, filterAIRepos } from "./fetch-github-trending";
 import { fetchAllFeeds, selectFeedItems, enrichFeedItems } from "./fetch-feeds";
-import { ArticleInput, classifiedItems, parseJson, sourceId, validatedTopics } from "./content-utils";
+import { ArticleInput, classifiedItems, parseJson, sourceId } from "./content-utils";
 import { KNOWLEDGE_LAYERS } from "../src/lib/knowledge";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
-import { editorialJudgment, isCompleteTopic } from "../src/lib/editorial-quality";
-import { CORE_INSIGHT_SCHEMA, CLASSIFICATION_SCHEMA, PLAN_SCHEMA, TOPIC_SCHEMA, withSourceIds } from "./editorial-schemas";
+import { synthesizeTopics } from "./synthesize-topics";
+import { CORE_INSIGHT_SCHEMA, CLASSIFICATION_SCHEMA, withSourceIds } from "./editorial-schemas";
 
 import { validateCoreInsight } from "../src/lib/core-insight";
 
@@ -82,42 +82,16 @@ importance 1–10，不以 GitHub 总星数或旧闻的重要性冒充新近热�
   }
   return output;
 }
-async function synthesize(inputs: ArticleInput[], items: DigestItem[], date: string, warnings: string[]): Promise<TrendTopic[]> {
-  const accepted = new Set(items.filter((i) => i.evidenceQuality === "substantial").map((i) => i.id));
-  const material = inputs.filter((i) => accepted.has(i.id));
-  if (material.length < 2) return [];
-  const plan = await validatedCompletion(`从下列资料策划2–4个面向广泛读者的近期趋势专题。不能只按单条新闻写摘要，也不能把无关报道硬拼。优先跨媒体重复出现的新产品、能力范式、访谈中的核心争议和商业变化。专题要回答一个具体问题。每个专题至少2个不同域名的来源；转载不等于独立证实。同一家公司多篇材料仍然只是单方观点。没有足够材料可以返回空数组。只返回 [{"title":"问题式专题标题","sourceIds":["输入ID"]}]。每专题选择2–6条真正相关的材料。\n${JSON.stringify(material.map((i) => ({ id: i.id, title: i.title, url: i.url, source: i.source, date: i.publishedAt, excerpt: i.content.slice(0, 1400) })))}`, EDITOR_MODEL, 1800, withSourceIds(PLAN_SCHEMA, material.map((i) => i.id)), (value) => {
-    if (!Array.isArray(value)) throw new Error("Invalid editorial plan");
-    const ids = new Set(material.map((i) => i.id));
-    for (const idea of value) {
-      if (!idea || typeof idea.title !== "string" || !Array.isArray(idea.sourceIds) || idea.sourceIds.some((id: unknown) => typeof id !== "string" || !ids.has(id))) throw new Error("Unknown source in topic plan");
-    }
-    return value;
-  });
-  const topics: TrendTopic[] = [];
-  for (const idea of plan.slice(0, 4)) {
-    if (!idea || !Array.isArray(idea.sourceIds) || typeof idea.title !== "string") throw new Error("Invalid topic plan");
-    const chosen = material.filter((i) => idea.sourceIds.includes(i.id)).slice(0, 6);
-    if (new Set(chosen.map((i) => new URL(i.url).hostname.replace(/^www\./, ""))).size < 2) continue;
-    const prompt = `撰写专题《${idea.title}》，总计约700–1000字，通俗解释但不能牺牲机制和边界。
-whyNow 必须给出材料中的时间与新变化；thesis 是标为编辑判断的一句话。至少4节：发生了什么、关键机制（用具体例子）、不同来源如何互补或存在分歧、证据边界。可以增加业务含义。
-每节 kind=fact/analysis/uncertainty；每节 sourceIds 只能引用输入中的原始 ID，至少一个。至少有一节 uncertainty。事实不要只引用汇总文章；引用一手和二手来源时说明各自证据角色。不得假定两个域名代表独立采访。没有反方材料就直说缺少独立验证。不可把 Agent 的通用设计推断成某产品已公开的内部实现。访谈须区分嘉宾观点和编辑解释；没有全文就写明。
-watchNext 为2–3个可观测指标或后续验证问题。只返回数组：[{"title":"","thesis":"","whyNow":"","layers":["agents"],"sections":[{"heading":"","body":"","sourceIds":[""],"kind":"fact"}],"watchNext":[""]}]。
-资料：${JSON.stringify(chosen.map((i) => ({ ...i, content: i.content.slice(0, 10000) })))}`;
-    try {
-      const generated = await validatedCompletion(prompt, EDITOR_MODEL, 6500, withSourceIds(TOPIC_SCHEMA, chosen.map((i) => i.id)), (value) => {
-        const checked = validatedTopics(value, chosen, date);
-        if (checked.length !== 1 || !checked.every(isCompleteTopic)) throw new Error("Topic prose must contain complete sentences and substantial sections; do not cut any field mid-sentence");
-        return checked.map((topic) => ({ ...topic, thesis: editorialJudgment(topic.thesis) }));
-      });
-      topics.push(...generated);
-      console.log(`[editorial] completed topic ${topics.length}: ${idea.title}`);
-    } catch (error) {
-      warnings.push(`专题「${idea.title}」未通过内容校验，本期未刊出`);
-      console.warn(`[editorial] withheld topic: ${error instanceof Error ? error.message : "validation failed"}`);
-    }
-  }
-  return topics;
+// Cache only validated bounded editorial units, keyed by all source material and rules.
+async function editorialCompletion<T>(prompt: string, schema: Record<string, unknown>, validate: (value: unknown) => T): Promise<T> {
+  const key = createHash("sha256").update(JSON.stringify({ prompt, schema, model: EDITOR_MODEL, rules: EDITOR_RULES })).digest("hex");
+  const file = path.join(process.cwd(), ".digest-cache", `editorial-${key}.json`);
+  try { return validate(JSON.parse(await fs.readFile(file, "utf8"))); } catch { /* Generate or repair this unit only. */ }
+  let raw: unknown;
+  const checked = await validatedCompletion(prompt, EDITOR_MODEL, 2400, schema, (value) => { const checked = validate(value); raw = value; return checked; });
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  await fs.writeFile(file, JSON.stringify(raw));
+  return checked;
 }
 async function synthesizeCore(inputs: ArticleInput[], items: DigestItem[], date: string): Promise<CoreInsight> {
   const eligible = new Set(items.filter((i) => i.evidenceQuality === "substantial").map((i) => i.id));
@@ -161,13 +135,12 @@ async function main() {
     warnings.push("核心洞见生成或校验未完成，资讯条目仍可阅读");
     console.warn("[core-insight]", error instanceof Error ? error.message : "generation failed");
   }
-  let topics: TrendTopic[] = [];
-  try { topics = await synthesize(unique, items, date, warnings); }
-  catch (error) {
-    warnings.push("趋势专题生成未完成，核心洞见与资讯条目独立保留");
-    console.warn("[editorial]", error instanceof Error ? error.message : "generation failed");
+  const { topics, report: topicGeneration } = await synthesizeTopics(unique, items, date, editorialCompletion);
+  for (const failure of topicGeneration.failures) {
+    warnings.push(`专题「${failure.title}」生成未完成，本期暂未刊出`);
+    console.warn(`[editorial] ${failure.title}: ${failure.reason}`);
   }
-  if (!topics.length && !warnings.some((w) => w.includes("专题"))) warnings.push("本期未选出符合跨来源要求的趋势专题");
+  if (topicGeneration.status === "insufficient") warnings.push("本期未选出符合跨来源要求的趋势专题");
   const hotRanking = items.filter((i) => i.evidenceQuality === "substantial" && i.publishedAt && now.getTime() - Date.parse(i.publishedAt) <= 7 * 86400000)
     .sort((a,b) => b.importance - a.importance || (b.publishedAt ?? "").localeCompare(a.publishedAt ?? "")).slice(0, 10);
   const category = (c: string) => items.filter((i) => i.category === c);
@@ -175,7 +148,7 @@ async function main() {
   const digest: DailyDigest = {
     schemaVersion: 3, date, dateZh, hotRanking, pmHighlights: hotRanking.filter((i) => i.relevance !== "general"),
     githubNew: category("github-new"), githubHot: category("github-hot"), research: category("research"), industry: category("industry"), thoughtLeaders: category("thought-leader"), chinese: category("chinese"),
-    editorNote, coreInsight, topics, highlights: hotRanking.slice(0, 5), github: items.filter((i) => i.category.startsWith("github")),
+    editorNote, coreInsight, topics, topicGeneration, highlights: hotRanking.slice(0, 5), github: items.filter((i) => i.category.startsWith("github")),
     coverage: { fetchedAt: now.toISOString(), lookbackDays: 14, sources: health, selected: unique.length, published: items.length, warnings },
   };
   const dir = path.join(process.cwd(), "data/digests");

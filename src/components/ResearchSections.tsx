@@ -1,5 +1,6 @@
 "use client";
 
+import { DigestText } from "./DigestText";
 import { SectionHeader } from "./SectionHeader";
 import { useState } from "react";
 import type { DailyDigest, DigestItem, KnowledgeLayer, TrendTopic } from "@/types";
@@ -15,14 +16,14 @@ export function TopicCard({ topic }: { topic: TrendTopic }) {
       <span>{topic.updatedAt} · {topic.sources.length} 篇材料 · {new Set(topic.sources.map((s) => new URL(s.url).hostname.replace(/^www\./, ""))).size} 个来源域名</span>
     </div>
     <h3 className="digest-card-title">{topic.title}</h3>
-    <p className="digest-body mt-2.5"><span className="digest-label">编辑判断 · </span>{topic.thesis}</p>
-    <p className="digest-body mt-2">为什么现在看：{topic.whyNow}</p>
+    <DigestText className="mt-3">{`**编辑判断：**${topic.thesis}`}</DigestText>
+    <DigestText className="mt-2">{`**为什么现在看：**${topic.whyNow}`}</DigestText>
     <details className="digest-disclosure mt-3 group">
       <summary className="digest-disclosure-toggle">展开深读 · 机制、分歧与证据</summary>
       <div className="digest-expanded-content space-y-5">
         {topic.sections.map((section, index) => <div key={index}>
           <div className="flex flex-wrap items-center gap-2 mb-2"><span className="digest-badge">{SECTION_KIND[section.kind]}</span><h4 className="digest-subheading">{section.heading}</h4></div>
-          <p className="digest-body whitespace-pre-line">{section.body}</p>
+          <DigestText>{section.body}</DigestText>
           <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">{section.sourceIds.map((id) => { const source = topic.sources.find((s) => s.id === id); return source ? <a key={id} href={source.url} target="_blank" rel="noopener noreferrer" className="digest-source-link">{source.source} ↗</a> : null; })}</div>
         </div>)}
         <div className="digest-inset p-4"><h4 className="digest-subheading mb-2">接下来观察什么</h4><ul className="digest-body list-disc pl-4">{topic.watchNext.map((watch) => <li key={watch}>{watch}</li>)}</ul></div>
@@ -31,10 +32,17 @@ export function TopicCard({ topic }: { topic: TrendTopic }) {
     </details>
   </article>;
 }
-export function TrendSection({ topics }: { topics: TrendTopic[] }) {
+export function TrendSection({ topics, background = [], generation }: { topics: TrendTopic[]; background?: TrendTopic[]; generation?: DailyDigest["topicGeneration"] }) {
+  const failed = generation?.status === "failed" || generation?.status === "partial";
   return <section id="trends" className="scroll-mt-28 mb-8">
-    <SectionHeader icon="✦" title="趋势专题" count={topics.length} note="把事件连起来看" />
-    {topics.length ? <div className="space-y-4">{topics.map((topic) => <TopicCard key={topic.id} topic={topic}/>)}</div> : <p className="digest-empty">这一期还没有足够的跨来源材料形成专题。保留资讯原文，等待进一步证据。</p>}
+    <SectionHeader icon="✦" title="趋势专题" count={topics.length} note="本期更新 · 把事件连起来看" />
+    {topics.length ? <div className="space-y-4">{topics.map((topic) => <TopicCard key={topic.id} topic={topic}/>)}</div> : <p className="digest-empty">{failed || !generation ? "本期新专题尚未完成生成与校验。下方背景深读保留原核对日期，不作为今日更新。" : "本期尚未选出证据充分的跨来源专题。可先阅读资讯与背景深读。"}</p>}
+    {failed && topics.length > 0 && <p className="digest-caption mt-3">本期已刊出 {topics.length} 篇专题，其余选题仍待完成校验。</p>}
+    {background.length > 0 && <details className="digest-coverage digest-disclosure mt-4">
+      <summary className="digest-disclosure-toggle">背景深读 · {background.length} 篇已刊专题（保留原日期）</summary>
+      <p className="digest-caption my-3">用于补充背景，默认收起；不计入本期新增专题。</p>
+      <div className="space-y-4">{background.map((topic) => <TopicCard key={topic.id} topic={topic}/>)}</div>
+    </details>}
   </section>;
 }
 export function KnowledgeGraph({ items, topics }: { items: DigestItem[]; topics: TrendTopic[] }) {
@@ -80,5 +88,5 @@ export function Coverage({ coverage }: { coverage: DailyDigest["coverage"] }) {
 }
 export function ArticleDepth({ item }: { item: DigestItem }) {
   if (!item.whyItMatters && !item.limitations) return null;
-  return <details className="digest-disclosure mb-3"><summary className="digest-disclosure-toggle">影响与证据边界</summary>{item.whyItMatters && <p className="digest-body mt-2"><b>为什么重要：</b>{item.whyItMatters}</p>}{item.limitations && <p className="digest-body mt-2"><b>仍需验证：</b>{item.limitations}</p>}<p className="digest-meta mt-2">{item.sourceKind && KIND[item.sourceKind]} · {item.publishedAt?.slice(0,10) || "发布时间未标注"}{item.evidenceQuality === "limited" && " · 材料有限"}</p></details>;
+  return <details className="digest-disclosure mb-3"><summary className="digest-disclosure-toggle">影响与证据边界</summary>{item.whyItMatters && <DigestText className="mt-2">{`**为什么重要：**${item.whyItMatters}`}</DigestText>}{item.limitations && <DigestText className="mt-2">{`**仍需验证：**${item.limitations}`}</DigestText>}<p className="digest-meta mt-2">{item.sourceKind && KIND[item.sourceKind]} · {item.publishedAt?.slice(0,10) || "发布时间未标注"}{item.evidenceQuality === "limited" && " · 材料有限"}</p></details>;
 }

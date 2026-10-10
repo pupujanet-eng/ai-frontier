@@ -7,7 +7,7 @@ function Emphasis({ text, phrases }: { text: string; phrases: string[] }) {
 export function CoreInsight({ insight }: { insight: Insight }) {
   return <section aria-labelledby="core-insight-title" className="digest-editor-note digest-card-padding mb-8">
     <div className="flex flex-wrap items-center gap-2 mb-3">
-      <h2 id="core-insight-title" className="digest-subheading">✦ 本期核心洞见</h2>
+      <h2 id="core-insight-title" className="digest-card-title">✦ 本期核心洞见</h2>
       <span className="digest-meta">{insight.origin === "curated" ? "编辑校订" : "多源综合"} · {insight.date}</span>
     </div>
     <p className="digest-body core-takeaway"><span className="digest-label">一句话判断：</span><Emphasis text={insight.takeaway} phrases={insight.highlights} /></p>

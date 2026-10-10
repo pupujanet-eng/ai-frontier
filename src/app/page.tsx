@@ -1,4 +1,4 @@
-import { editorialJudgment, isCompleteTopic } from "@/lib/editorial-quality";
+import { topicEditions } from "@/lib/topic-editions";
 import { CoreInsight, DailyDigest, TrendTopic } from "@/types";
 import { selectCoreInsight } from "@/lib/core-insight";
 import { DigestView } from "@/components/DigestView";
@@ -22,9 +22,11 @@ async function getTopics(digest: DailyDigest) {
   const briefings = await Promise.all(files.filter((f) => f.endsWith(".json")).map(async (file) =>
     JSON.parse(await fs.readFile(path.join(process.cwd(), "data/briefings", file), "utf8")) as TrendTopic
   ));
-  const now = Date.now();
-  const current = briefings.filter((b) => { const age = now - Date.parse(b.updatedAt); return age >= 0 && age <= 14 * 86400000; });
-  return [...new Map([...current, ...(digest.topics ?? [])].map((t) => [t.id, t])).values()];
+  const historyFiles = await fs.readdir(path.join(process.cwd(), "data/digests")).catch(() => []);
+  const history = await Promise.all(historyFiles.filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f) && f.slice(0,10) < digest.date).sort().reverse().slice(0, 14).map(async (file) => {
+    try { const edition = JSON.parse(await fs.readFile(path.join(process.cwd(), "data/digests", file), "utf8")) as DailyDigest; return edition.topics ?? []; } catch { return []; }
+  }));
+  return topicEditions(digest.date, digest.topics ?? [], [...briefings, ...history.flat()]);
 }
 
 export default async function Home() {
@@ -47,12 +49,9 @@ export default async function Home() {
     );
   }
 
-  const topics = await getTopics(digest);
-  const completeTopics = topics.filter(isCompleteTopic).map((topic) => ({ ...topic, thesis: editorialJudgment(topic.thesis) }));
-  const withheld = topics.length - completeTopics.length;
+  const { current: topics, background: backgroundTopics } = await getTopics(digest);
   const correction = await fs.readFile(path.join(process.cwd(), "data/editorials", `${digest.date}.json`), "utf8")
     .then((raw) => JSON.parse(raw) as CoreInsight).catch(() => undefined);
   const coreInsight = selectCoreInsight(digest.date, digest.coreInsight, correction);
-  const coverage = digest.coverage && { ...digest.coverage, warnings: [...digest.coverage.warnings, ...(withheld ? [`${withheld} 篇专题正文不完整，已暂不展示`] : [])] };
-  return <DigestView digest={{ ...digest, topics: completeTopics, coreInsight, coverage }} />;
+  return <DigestView digest={{ ...digest, topics, backgroundTopics, coreInsight }} />;
 }
