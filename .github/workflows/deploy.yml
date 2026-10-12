@@ -2,7 +2,7 @@ name: Daily Digest + Deploy
 
 on:
   schedule:
-    - cron: "0 0 * * *" # 北京时间 08:00
+    - cron: "17 0,3,6,12 * * *" # 北京时间 08:17 首次；11:17/14:17/20:17 自动补跑，完整则跳过
   workflow_dispatch:
     inputs:
       skip_generate:
@@ -19,7 +19,7 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -55,7 +55,7 @@ jobs:
           restore-keys: model-checkpoints-v1-
       - name: Generate daily digest
         if: ${{ env.SKIP_GENERATE != 'true' }}
-        timeout-minutes: 40
+        timeout-minutes: 50
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CLASSIFY_MODEL: ${{ vars.CLASSIFY_MODEL || '' }}
@@ -67,6 +67,16 @@ jobs:
         with:
           path: .digest-cache
           key: model-checkpoints-v1-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Archive editorial diagnostics
+        if: ${{ always() && env.SKIP_GENERATE != 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: editorial-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .digest-cache/diagnostics
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Require both editorial sections before publishing
+        run: npx tsx scripts/verify-edition.ts
       - name: Save verified editions
         if: ${{ env.SKIP_GENERATE != 'true' }}
         uses: actions/cache/save@v4

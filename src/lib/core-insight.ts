@@ -6,7 +6,7 @@ function record(value: unknown): Record<string, unknown> {
 }
 function prose(value: unknown, name: string, min: number, max: number, sentence = true): string {
   if (typeof value !== "string" || value.trim().length < min || value.trim().length > max || /[<>]|\*\*/.test(value)
-    || (sentence && !/[。！？.!?][”’」』）)"']*$/.test(value.trim()))) throw new Error(`Incomplete or invalid ${name}`);
+    || (sentence && !/[。！？.!?][”’」』）)"']*$/.test(value.trim()))) throw new Error(`${name}: require ${min}–${max} characters${sentence ? " and a complete sentence ending in punctuation" : ""}; received ${typeof value === "string" ? value.trim().length : "non-text"}`);
   return value.trim();
 }
 function highlights(value: unknown, text: string): string[] {
@@ -22,15 +22,7 @@ export function validateCoreInsight(value: unknown, sources: TopicSource[], date
   const boundary = prose(v.boundary, "boundary", 12, 180);
   const byId = new Map(sources.map((s) => [s.id, s]));
   if (!Array.isArray(v.points) || v.points.length < 2 || v.points.length > 3) throw new Error("Core insight needs 2–3 priorities");
-  const points = v.points.map((raw) => {
-    const p = record(raw);
-    const title = prose(p.title, "title", 4, 60, false);
-    const fact = prose(p.fact, "fact", 20, 240);
-    const meaning = prose(p.meaning, "meaning", 15, 180);
-    const watch = prose(p.watch, "watch", 10, 120);
-    if (!Array.isArray(p.sourceIds) || !p.sourceIds.length || p.sourceIds.some((id) => typeof id !== "string" || !byId.has(id))) throw new Error("Unknown core insight source");
-    return { title, fact, meaning, watch, highlights: highlights(p.highlights, fact + meaning + watch), sourceIds: [...new Set(p.sourceIds)] as string[] };
-  });
+  const points = v.points.map((raw) => validateCorePoint(raw, sources));
   const used = [...new Set(points.flatMap((p) => p.sourceIds))].map((id) => byId.get(id)!);
   const cutoff = Date.parse(`${date}T23:59:59+08:00`);
   if (!Number.isFinite(cutoff) || used.some((s) => {
@@ -61,4 +53,15 @@ export function emphasisParts(text: string, phrases: string[]) {
     offset = match.index + match.phrase.length;
   }
   return parts;
+}
+
+export function validateCorePoint(raw: unknown, sources: TopicSource[]): CoreInsight["points"][number] {
+    const byId = new Map(sources.map((s) => [s.id, s]));
+    const p = record(raw);
+    const title = prose(p.title, "title", 4, 60, false);
+    const fact = prose(p.fact, "fact", 20, 240);
+    const meaning = prose(p.meaning, "meaning", 15, 180);
+    const watch = prose(p.watch, "watch", 10, 120);
+    if (!Array.isArray(p.sourceIds) || !p.sourceIds.length || p.sourceIds.some((id) => typeof id !== "string" || !byId.has(id))) throw new Error("Unknown core insight source");
+    return { title, fact, meaning, watch, highlights: highlights(p.highlights, fact + meaning + watch), sourceIds: [...new Set(p.sourceIds)] as string[] };
 }

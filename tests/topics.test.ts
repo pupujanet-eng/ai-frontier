@@ -51,3 +51,19 @@ test("all prose renders emphasis consistently without executable HTML or blanket
   assert.doesNotMatch(html, /<script>|<mark>/);
   assert.ok(html.includes("版本 2.0"));
 });
+
+test("Chinese prose labels use semantic bold without Markdown delimiter ambiguity", () => {
+  const html = renderToStaticMarkup(createElement(() => DigestText({ label:"编辑判断：", children:"持续工作的助手。" })));
+  assert.match(html, /<strong class="digest-label">编辑判断：<\/strong>/);
+  assert.doesNotMatch(html, /\*\*/);
+});
+
+test("old evidence and an unchanged source set do not become today's new topic", async () => {
+  const plan = [{title:"重复选题",sourceIds:["a","b"]}];
+  const previous = {...oldTopic(),updatedAt:"2026-10-09",sources:evidence};
+  const duplicate = await synthesizeTopics(evidence, items, "2026-10-10", async (_p, _s, validate) => validate(plan), [previous]);
+  assert.equal(duplicate.topics.length, 0); assert.equal(duplicate.report.status, "failed");
+  const stale = evidence.map((s) => ({...s,publishedAt:"2026-09-01"}));
+  const old = await synthesizeTopics(stale, items, "2026-10-10", async (_p, _s, validate) => validate(plan));
+  assert.equal(old.report.attempted, 0);
+});

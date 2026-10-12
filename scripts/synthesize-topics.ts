@@ -14,22 +14,27 @@ const SECTION_PLAN = [
 
 // Generate and validate bounded sections separately. A bad section retries on its
 // own; it never causes all previously completed sections to be rewritten.
-export async function synthesizeTopics(inputs: ArticleInput[], items: DigestItem[], date: string, complete: Complete) {
+export async function synthesizeTopics(inputs: ArticleInput[], items: DigestItem[], date: string, complete: Complete, previousTopics: TrendTopic[] = []) {
   const accepted = new Set(items.filter((i) => i.evidenceQuality === "substantial").map((i) => i.id));
+  const cutoff = Date.parse(`${date}T23:59:59+08:00`);
+  const recentTopics = previousTopics.filter((t) => cutoff - Date.parse(t.updatedAt) >= 0 && cutoff - Date.parse(t.updatedAt) <= 7 * 86400000);
   const material = inputs.filter((i) => accepted.has(i.id));
   const topics: TrendTopic[] = [];
   const report: TopicGeneration = { status: "insufficient", attempted: 0, published: 0, failures: [] };
   if (material.length < 2) return { topics, report };
   try {
-    const plan = await complete(`为 ${date} 选择2–3个近期趋势专题，按重要性排序。每题必须回答一个具体问题，综合2–5条相关资料、至少两个不同域名。优先本期新变化，不把旧闻当新消息，不按单篇标题改写。转载不算独立验证，不凑不相关材料。没有合适选题才返回空 items。字段 title, sourceIds。\n${JSON.stringify(material.map((i) => ({ id: i.id, title: i.title, url: i.url, date: i.publishedAt, excerpt: i.content.slice(0, 1600) })))}`, withSourceIds(PLAN_SCHEMA, material.map((i) => i.id)), (value) => {
+    const plan = await complete(`为 ${date} 选择2–3个近期趋势专题，按重要性排序。每题必须回答一个具体问题，综合2–5条相关资料、至少两个不同域名。优先本期新变化，不把旧闻当新消息，不按单篇标题改写。转载不算独立验证，不凑不相关材料。每个专题至少包含一篇近72小时发布的材料。不要把已刊专题使用过的同一组材料重新包装成今日更新；只有新增来源或新的事实进展才继续写。没有合适选题才返回空 items。字段 title, sourceIds。已刊来源组合：${JSON.stringify(recentTopics.map((t) => ({title:t.title, sourceIds:t.sources.map((s) => s.id)})))}。\n${JSON.stringify(material.map((i) => ({ id: i.id, title: i.title, url: i.url, date: i.publishedAt, excerpt: i.content.slice(0, 1600) })))}`, withSourceIds(PLAN_SCHEMA, material.map((i) => i.id)), (value) => {
       if (!Array.isArray(value) || value.length > 3) throw new Error("Plan must contain at most three topics");
-      return value.map((v) => {
+      const ideas = value.map((v) => {
         const title = textField(v?.title, "plan title");
         if (!Array.isArray(v.sourceIds) || v.sourceIds.length < 2 || v.sourceIds.length > 5 || v.sourceIds.some((id: string) => !material.some((i) => i.id === id))) throw new Error("Plan needs 2–5 known sources");
         const sources = material.filter((i) => v.sourceIds.includes(i.id));
         if (new Set(sources.map((i) => new URL(i.url).hostname.replace(/^www\./, ""))).size < 2) throw new Error("Plan requires two publisher domains per topic");
         return { title, sources };
-      });
+      }).filter((idea) => idea.sources.some((s) => s.publishedAt && cutoff - Date.parse(s.publishedAt) >= 0 && cutoff - Date.parse(s.publishedAt) <= 3 * 86400000)
+        && !recentTopics.some((old) => idea.sources.every((s) => old.sources.some((known) => known.id === s.id))));
+      if (!ideas.length) throw new Error("No fresh, distinct cross-source topic survived planning; choose a different supported topic");
+      return ideas;
     });
     report.attempted = plan.length;
     for (const idea of plan) {

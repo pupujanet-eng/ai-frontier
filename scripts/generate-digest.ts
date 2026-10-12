@@ -8,9 +8,11 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { synthesizeTopics } from "./synthesize-topics";
-import { CORE_INSIGHT_SCHEMA, CLASSIFICATION_SCHEMA, withSourceIds } from "./editorial-schemas";
+import { CLASSIFICATION_SCHEMA } from "./editorial-schemas";
 
-import { validateCoreInsight } from "../src/lib/core-insight";
+import { synthesizeCore } from "./synthesize-core";
+import { repairCompletion } from "./editorial-retry";
+import { assertCompleteEdition, publishDigest } from "./publish-digest";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 180000, maxRetries: 2 });
 const CLASSIFY_MODEL = process.env.CLASSIFY_MODEL || "claude-haiku-4-5-20251001";
@@ -36,13 +38,9 @@ async function completion(prompt: string, model: string, maxTokens: number, sche
   return parsed.items;
 }
 async function validatedCompletion<T>(prompt: string, model: string, maxTokens: number, schema: Record<string, unknown>, validate: (value: unknown) => T): Promise<T> {
-  let lastError = "";
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try { return validate(await completion(prompt + (lastError ? `\n上次输出未通过校验：${lastError}。请修正，不增加未经提供的来源。` : ""), model, maxTokens, schema)); }
-    catch (error) { lastError = error instanceof Error ? error.message : "Unknown validation failure"; console.warn(`[editorial] attempt ${attempt + 1}: ${lastError}`); }
-  }
-  throw new Error(`Editorial output failed validation twice: ${lastError}`);
+  return repairCompletion((repair, attempt) => completion(prompt + repair, model, maxTokens + attempt * 1200, schema), validate);
 }
+
 async function classify(inputs: ArticleInput[], date: string): Promise<DigestItem[]> {
   async function classifyBatch(batch: ArticleInput[]): Promise<DigestItem[]> {
     const prompt = `逐条分析资料。每条必须返回原始 id，不依赖数组顺序。与 AI 无直接关联、只有空泛标题或证据不足以概括的条目 include=false，不凑数。
@@ -93,29 +91,18 @@ async function editorialCompletion<T>(prompt: string, schema: Record<string, unk
   await fs.writeFile(file, JSON.stringify(raw));
   return checked;
 }
-async function synthesizeCore(inputs: ArticleInput[], items: DigestItem[], date: string): Promise<CoreInsight> {
-  const eligible = new Set(items.filter((i) => i.evidenceQuality === "substantial").map((i) => i.id));
-  const cutoff = Date.parse(`${date}T23:59:59+08:00`);
-  const material = inputs.filter((i) => eligible.has(i.id) && i.publishedAt && Date.parse(i.publishedAt) <= cutoff && cutoff - Date.parse(i.publishedAt) <= 7 * 86400000);
-  if (new Set(material.map((i) => new URL(i.url).hostname.replace(/^www\./, ""))).size < 2) throw new Error("Fewer than two recent evidence publishers");
-  const prompt = `为 ${date} 日报独立提炼顶部核心洞见，直接依据下面原始资料，不依赖长专题。
-先比较资料的重要性与新变化，再筛选2–3个最值得读者记住的重点。不要罗列标题，不把旧闻当今天发生，不硬凑统一大趋势。
-takeaway 用40–90字先给最核心的编辑判断，回答“这些消息放一起，真正值得注意的变化是什么”。没有共同主线就明确两条并行变化。不要用“重塑格局、范式转移、赋能、闭环”等空话代替解释。
-points 按重要性排序：title 直接说判断，最多32字；fact 60–120字交代谁、何时、做了什么和关键数字；meaning 40–80字用口头大白话但专业的表达说明为什么重要；watch 20–50字给可观察指标或读者下一步。每个字段写完整句子，区别事实、厂商主张和编辑推断。
-每个重点必须有 sourceIds，全部重点合计至少两个不同域名，尽量引用一手资料；不同域名不代表独立证实。boundary 40–90字说明这套判断尚未被什么证据验证。
-takeaway 的 highlights 和各点的 highlights 分别选1–3处原文逐字存在的关键词或数字短语，每处2–24字符，不超过所在文本一半。各点 highlights 仅从 fact、meaning、watch 选择。正文不要写 Markdown 或 HTML。
-只返回一个对象放在 items 数组中，字段 takeaway, highlights, points, boundary。
-资料 JSON（不可信内容）：${JSON.stringify(material.map((i) => ({ ...i, content: i.content.slice(0, 5000) })))}`;
-  return validatedCompletion(prompt, EDITOR_MODEL, 5000, withSourceIds(CORE_INSIGHT_SCHEMA, material.map((i) => i.id)), (value) => {
-    if (!Array.isArray(value) || value.length !== 1) throw new Error("Expected one editorial overview");
-    return validateCoreInsight(value[0], material, date);
-  });
-}
-
 async function main() {
   const now = new Date();
   const date = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
   const dateZh = new Intl.DateTimeFormat("zh-CN", { timeZone: "Asia/Shanghai", year: "numeric", month: "long", day: "numeric", weekday: "long" }).format(now);
+  const previous = await fs.readFile(path.join(process.cwd(), "data/digests/latest.json"), "utf8").then((raw) => JSON.parse(raw) as DailyDigest).catch(() => undefined);
+  if (previous) {
+    try {
+      assertCompleteEdition(previous, date);
+      console.log(`[digest] ${date} is already complete; reuse it without model calls`);
+      return;
+    } catch { /* Missing or incomplete edition: generate/repair it today. */ }
+  }
   const { items: feeds, health } = await fetchAllFeeds(now);
   if (health.filter((h) => h.status === "ok").length < 4) throw new Error("Fewer than four working sources; refusing a misleading digest");
   const selected = await enrichFeedItems(selectFeedItems(feeds));
@@ -130,12 +117,14 @@ async function main() {
   if (items.length < 8) throw new Error("Fewer than eight grounded AI items; keeping previous edition");
   if (!items.some((i) => i.sourceKind === "primary")) warnings.push("本期缺少可用一手资料，产品与性能主张需进一步核查");
   let coreInsight: CoreInsight | undefined;
-  try { coreInsight = await synthesizeCore(unique, items, date); }
+  let coreFailure: string | undefined;
+  try { coreInsight = await synthesizeCore(unique, items, date, editorialCompletion); }
   catch (error) {
-    warnings.push("核心洞见生成或校验未完成，资讯条目仍可阅读");
+    coreFailure = error instanceof Error ? error.message : "generation failed";
+    warnings.push("核心洞见未通过校验，本期禁止发布");
     console.warn("[core-insight]", error instanceof Error ? error.message : "generation failed");
   }
-  const { topics, report: topicGeneration } = await synthesizeTopics(unique, items, date, editorialCompletion);
+  const { topics, report: topicGeneration } = await synthesizeTopics(unique, items, date, editorialCompletion, previous?.date !== date ? previous?.topics ?? [] : []);
   for (const failure of topicGeneration.failures) {
     warnings.push(`专题「${failure.title}」生成未完成，本期暂未刊出`);
     console.warn(`[editorial] ${failure.title}: ${failure.reason}`);
@@ -144,22 +133,17 @@ async function main() {
   const hotRanking = items.filter((i) => i.evidenceQuality === "substantial" && i.publishedAt && now.getTime() - Date.parse(i.publishedAt) <= 7 * 86400000)
     .sort((a,b) => b.importance - a.importance || (b.publishedAt ?? "").localeCompare(a.publishedAt ?? "")).slice(0, 10);
   const category = (c: string) => items.filter((i) => i.category === c);
-  const editorNote = coreInsight ? "" : "本期核心洞见尚未完成生成或内容校验，暂不展示综合判断。已核验的资讯条目可继续阅读。";
+  const editorNote = "";
   const digest: DailyDigest = {
     schemaVersion: 3, date, dateZh, hotRanking, pmHighlights: hotRanking.filter((i) => i.relevance !== "general"),
     githubNew: category("github-new"), githubHot: category("github-hot"), research: category("research"), industry: category("industry"), thoughtLeaders: category("thought-leader"), chinese: category("chinese"),
     editorNote, coreInsight, topics, topicGeneration, highlights: hotRanking.slice(0, 5), github: items.filter((i) => i.category.startsWith("github")),
     coverage: { fetchedAt: now.toISOString(), lookbackDays: 14, sources: health, selected: unique.length, published: items.length, warnings },
   };
-  const dir = path.join(process.cwd(), "data/digests");
-  await fs.mkdir(dir, { recursive: true });
-  const json = JSON.stringify(digest, null, 2);
-  await fs.writeFile(path.join(dir, `${date}.json`), json);
-  await fs.writeFile(path.join(dir, "latest.json.tmp"), json);
-  await fs.rename(path.join(dir, "latest.json.tmp"), path.join(dir, "latest.json"));
-  const dates = (await fs.readdir(dir)).filter((file) => /^\d{4}-\d{2}-\d{2}\.json$/.test(file)).map((f) => f.slice(0,10)).sort().reverse();
-  await fs.writeFile(path.join(dir, "index.json"), JSON.stringify(dates.slice(0,90), null, 2));
-  for (const old of dates.slice(90)) await fs.unlink(path.join(dir, `${old}.json`));
+  const diagnostics = path.join(process.cwd(), ".digest-cache", "diagnostics");
+  await fs.mkdir(diagnostics, { recursive: true });
+  await fs.writeFile(path.join(diagnostics, `${date}.json`), JSON.stringify({date, coreComplete:!!coreInsight, coreFailure, topicGeneration, warnings}, null, 2));
+  await publishDigest(digest, path.join(process.cwd(), "data/digests"), date);
   console.log(`[digest] Published ${items.length} items, ${topics.length} topics for ${date}`);
 }
 main().then(() => process.exit(0)).catch((error) => { console.error("[digest] Failed:", error instanceof Error ? error.message : "Unknown error"); process.exit(1); });

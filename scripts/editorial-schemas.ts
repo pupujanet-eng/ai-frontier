@@ -42,3 +42,6 @@ export const CORE_INSIGHT_SCHEMA = envelope(object({
 
 export const TOPIC_HEADER_SCHEMA = envelope(object({ title: string, thesis: string, whyNow: string, layers, watchNext: list(string) }));
 export const TOPIC_SECTION_SCHEMA = envelope(object({ body: string, sourceIds: list(string) }));
+
+export const CORE_POINT_SCHEMA = envelope(object({ title: string, fact: string, meaning: string, watch: string, highlights: list(string), sourceIds: list(string) }));
+export const CORE_SUMMARY_SCHEMA = envelope(object({ takeaway: string, highlights: list(string), boundary: string }));
