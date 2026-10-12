@@ -32,6 +32,23 @@ test("single publisher plan fails rather than presenting a fake cross-source top
   const {topics, report} = await synthesizeTopics(evidence, items, "2026-10-10", async (_prompt, _schema, validate) => validate([{title:"单源选题",sourceIds:["a","a"]}]));
   assert.equal(topics.length, 0); assert.equal(report.status, "failed");
 });
+test("a single-publisher idea retrieves complementary evidence before writing", async () => {
+  const input = [...evidence, {...evidence[0],id:"c",url:"https://a.example/second"}];
+  const selected = input.map((i) => ({id:i.id,evidenceQuality:"substantial"})) as DigestItem[];
+  let repaired = false;
+  const {topics,report} = await synthesizeTopics(input, selected, "2026-10-10", async (prompt, schema, validate) => {
+    if (prompt.includes("选择2–3个")) return validate([{title:"具体问题",sourceIds:["a","c"]}]);
+    if (prompt.includes("其他发布者候选")) {
+      repaired = true;
+      assert.deepEqual((schema as {properties:{items:{items:{properties:{sourceIds:{items:{enum:string[]}}}}}}}).properties.items.items.properties.sourceIds.items.enum, ["b"]);
+      return validate([{title:"具体问题",sourceIds:["b"]}]);
+    }
+    if (prompt.includes("只写专题导语")) return validate([{title:"具体问题",thesis:paragraph,whyNow:paragraph,layers:["agents"],watchNext:["观察实际部署的任务完成率。","观察人工介入次数的变化。"]}]);
+    return validate([{body:paragraph,sourceIds:["a","b"]}]);
+  });
+  assert.equal(repaired, true); assert.equal(report.status,"complete");
+  assert.equal(topics.length,1); assert.deepEqual(topics[0].sources.map((s) => s.id),["a","b"]);
+});
 test("Dots and historical topics cannot impersonate today's updates", () => {
   const old = oldTopic();
   const today = {...old,id:"today",origin:"generated" as const,updatedAt:"2026-10-10"};
