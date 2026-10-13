@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { emphasisParts, selectCoreInsight, validateCoreInsight } from "../src/lib/core-insight";
+import { emphasisParts, groundedHighlights, selectCoreInsight, validateCoreInsight } from "../src/lib/core-insight";
 import type { CoreInsight } from "../src/types";
 const edition = (): CoreInsight => JSON.parse(readFileSync("data/editorials/2026-10-09.json", "utf8"));
 test("core synthesis survives absent topics and date-bound correction never leaks into another edition", () => {
@@ -29,4 +29,15 @@ test("highlight matching preserves literal text, overlapping phrases and markup-
   const parts = emphasisParts(text, ["C++", "C++ 工具", ""]);
   assert.equal(parts.map((p) => p.text).join(""), text);
   assert.deepEqual(parts.filter((p) => p.highlighted).map((p) => p.text), ["C++", "C++ 工具"]);
+});
+test("invalid emphasis is recovered from literal prose without changing the facts", () => {
+  const text = "OpenAI 的模型部署需要人工复核，单次推理成本下降50%不代表所有任务都能自动完成。";
+  for (const invalid of [[], ["不存在的热词"], [text], ["OpenAI", "OpenAI", "OpenAI 的模型部署"]]) {
+    const marks = groundedHighlights(text, invalid);
+    assert.ok(marks.length >= 1 && marks.length <= 3);
+    assert.ok(marks.every((p) => text.includes(p) && p.length >= 2 && p.length <= 24));
+    assert.ok(marks.reduce((n,p) => n+p.length,0) <= text.length/2);
+    assert.equal(emphasisParts(text, marks).map((p) => p.text).join(""), text);
+  }
+  assert.equal(groundedHighlights(text, ["人工复核"])[0], "人工复核");
 });

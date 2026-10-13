@@ -156,7 +156,8 @@ async function main() {
   const diagnostics = path.join(process.cwd(), ".digest-cache", "diagnostics");
   await fs.mkdir(diagnostics, { recursive: true });
   await fs.writeFile(path.join(diagnostics, `${date}.json`), JSON.stringify({date, coreComplete:!!coreInsight, coreFailure, topicGeneration, warnings}, null, 2));
+  if (process.env.GITHUB_ACTIONS) console.log(`::notice title=Editorial completeness::${date}: core=${!!coreInsight}; complete topics=${topics.length}/${topicGeneration.attempted}`);
   await publishDigest(digest, path.join(process.cwd(), "data/digests"), date);
   console.log(`[digest] Published ${items.length} items, ${topics.length} topics for ${date}`);
 }
-main().then(() => process.exit(0)).catch((error) => { console.error("[digest] Failed:", error instanceof Error ? error.message : "Unknown error"); process.exit(1); });
+main().then(() => process.exit(0)).catch((error) => { const reason = error instanceof Error ? error.message : "Unknown error"; console.error("[digest] Failed:", reason); annotation("Digest generation failed", reason); process.exit(1); });

@@ -70,7 +70,7 @@ export async function synthesizeTopics(inputs: ArticleInput[], items: DigestItem
             if (!Array.isArray(value) || value.length !== 1) throw new Error(`Expected one section: ${section.heading}`);
             const v = value[0];
             const body = textField(v.body, "section body");
-            if (!completeSentence(body, 100)) throw new Error(`${section.heading}: body must be at least 100 characters and end with a complete sentence (received ${body.length} characters)`);
+            if (!completeSentence(body, 100)) throw new Error(`${section.heading}: body must be at least 100 characters and end with a complete sentence (received ${body.length} characters; ending ${JSON.stringify(body.slice(-90))})`);
             if (!Array.isArray(v.sourceIds) || !v.sourceIds.length || v.sourceIds.some((id: string) => !idea.sources.some((i) => i.id === id))) throw new Error("Section has missing or unknown citations");
             if (section.kind === "fact" && new Set(idea.sources.filter((i) => v.sourceIds.includes(i.id)).map((i) => new URL(i.url).hostname.replace(/^www\./, ""))).size < 2) throw new Error("Fact section must compare at least two publisher domains");
             return { heading: section.heading, body, sourceIds: [...new Set<string>(v.sourceIds)], kind: section.kind };

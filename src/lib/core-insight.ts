@@ -15,6 +15,28 @@ function highlights(value: unknown, text: string): string[] {
   if (phrases.reduce((n, p) => n + p.length, 0) > text.length * .5) throw new Error("Highlight keywords, not whole paragraphs");
   return phrases;
 }
+
+// Emphasis is presentation metadata. Never rewrite facts to make a proposed
+// highlight match; recover short, meaningful phrases from the actual prose.
+export function groundedHighlights(text: string, proposed: unknown): string[] {
+  const preferred = Array.isArray(proposed) ? proposed.filter((p): p is string => typeof p === "string").map((p) => p.trim()) : [];
+  const quoted = [...text.matchAll(/[「“《]([^「」“”《》\n]{2,24})[」”》]/g)].map((m) => m[1]);
+  const names = [...text.matchAll(/\b[A-Z][A-Za-z0-9.+-]*(?: [A-Z][A-Za-z0-9.+-]*){0,2}\b/g)].map((m) => m[0]);
+  const numbers = [...text.matchAll(/\d+(?:[.,]\d+)*(?:\s?(?:%|倍|万|亿|美元|元|小时|天|GB|TB|tokens?))?/g)].map((m) => m[0]);
+  const concepts = ["人工复核", "执行权限", "任务完成率", "推理成本", "能力边界", "独立验证", "数据隐私", "工作流", "可靠性", "算力", "成本", "部署", "模型"];
+  const stopWords = new Set(["今天", "本期", "这些", "这个", "已经", "可以", "不能", "仍然", "需要", "因为", "所以", "不是", "而是", "我们", "他们", "没有", "以及", "但是", "同时"]);
+  const words = [...new Intl.Segmenter("zh", {granularity:"word"}).segment(text)]
+    .filter((s) => s.isWordLike && !stopWords.has(s.segment)).map((s) => s.segment).sort((a,b) => b.length-a.length);
+  const selected: string[] = [];
+  const budget = Math.floor(text.length / 2);
+  for (const p of [...preferred, ...quoted, ...names, ...numbers, ...concepts, ...words]) {
+    if (selected.length === 3) break;
+    if (p.length < 2 || p.length > 24 || !text.includes(p) || /[。！？!?<>]/.test(p)
+      || selected.some((s) => s.includes(p) || p.includes(s)) || selected.reduce((n,s) => n+s.length,0)+p.length > budget) continue;
+    selected.push(p);
+  }
+  return highlights(selected, text);
+}
 // This contract depends on article evidence, never on whether long topics succeed.
 export function validateCoreInsight(value: unknown, sources: TopicSource[], date: string, origin: CoreInsight["origin"] = "generated"): CoreInsight {
   const v = record(value);
