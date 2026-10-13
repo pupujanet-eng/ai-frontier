@@ -7,6 +7,7 @@ const object = (properties: Record<string, Schema>): Schema => ({ type: "object"
 const choices = (...values: string[]): Schema => ({ type: "string", enum: values });
 const layers = list(choices("models", "infrastructure", "agents", "products", "business", "governance"));
 const envelope = (item: Schema): Schema => object({ items: list(item) });
+const single = (item: Schema): Schema => object({ item });
 export const CLASSIFICATION_SCHEMA = envelope(object({
   id: string, include: { type: "boolean" }, titleZh: string, summaryZh: string,
   whyItMatters: string, limitations: string, insight: string,
@@ -40,8 +41,8 @@ export const CORE_INSIGHT_SCHEMA = envelope(object({
   points: list(object({ title: string, fact: string, meaning: string, watch: string, highlights: list(string), sourceIds: list(string) })),
 }));
 
-export const TOPIC_HEADER_SCHEMA = envelope(object({ title: string, thesis: string, whyNow: string, layers, watchNext: list(string) }));
-export const TOPIC_SECTION_SCHEMA = envelope(object({ body: string, sourceIds: list(string) }));
+export const TOPIC_HEADER_SCHEMA = single(object({ title: string, thesis: string, whyNow: string, layers, watchNext: list(string) }));
+export const TOPIC_SECTION_SCHEMA = single(object({ body: string, sourceIds: list(string) }));
 
-export const CORE_POINT_SCHEMA = envelope(object({ title: string, fact: string, meaning: string, watch: string, highlights: list(string), sourceIds: list(string) }));
-export const CORE_SUMMARY_SCHEMA = envelope(object({ takeaway: string, highlights: list(string), boundary: string }));
+export const CORE_POINT_SCHEMA = single(object({ title: string, fact: string, meaning: string, watch: string, highlights: list(string), sourceIds: list(string) }));
+export const CORE_SUMMARY_SCHEMA = single(object({ takeaway: string, highlights: list(string), boundary: string }));

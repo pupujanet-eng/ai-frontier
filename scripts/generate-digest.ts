@@ -27,13 +27,18 @@ const EDITOR_RULES = `你是面向中文 AI 从业者、产品负责人和普通
 知识层：${LAYERS}。输出中文，保留专有名词。只返回合法 JSON。`;
 
 async function completion(prompt: string, model: string, maxTokens: number, schema: Record<string, unknown>): Promise<unknown> {
+  const single = !!(schema.properties as Record<string, unknown>)?.item;
   const response = await client.messages.create({
     model, max_tokens: maxTokens, system: EDITOR_RULES,
     output_config: { format: { type: "json_schema", schema } },
-    messages: [{ role: "user", content: prompt + '\n最终输出必须是 {"items": [...]} 对象，所有条目放在 items 中。' }],
+    messages: [{ role: "user", content: prompt + (single ? '\n最终输出必须是 {"item": {...}}，只返回一个完整对象，不能返回数组。' : '\n最终输出必须是 {"items": [...]} 对象，所有条目放在 items 中。') }],
   });
   if (response.stop_reason !== "end_turn") throw new Error(`Incomplete model response: ${response.stop_reason}`);
   const parsed = parseJson(response.content.filter((part) => part.type === "text").map((part) => part.text).join("\n"));
+  if (single) {
+    if (!parsed || typeof parsed !== "object" || !("item" in parsed) || !parsed.item || typeof parsed.item !== "object" || Array.isArray(parsed.item)) throw new Error("Missing structured item object");
+    return [parsed.item];
+  }
   if (!parsed || typeof parsed !== "object" || !("items" in parsed) || !Array.isArray(parsed.items)) throw new Error("Missing structured items envelope");
   return parsed.items;
 }
@@ -91,6 +96,12 @@ async function editorialCompletion<T>(prompt: string, schema: Record<string, unk
   await fs.writeFile(file, JSON.stringify(raw));
   return checked;
 }
+function annotation(title: string, reason: string) {
+  if (!process.env.GITHUB_ACTIONS) return;
+  const escaped = reason.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
+  console.log(`::warning title=${title}::${escaped}`);
+}
+
 async function main() {
   const now = new Date();
   const date = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
@@ -122,12 +133,14 @@ async function main() {
   catch (error) {
     coreFailure = error instanceof Error ? error.message : "generation failed";
     warnings.push("核心洞见未通过校验，本期禁止发布");
-    console.warn("[core-insight]", error instanceof Error ? error.message : "generation failed");
+    console.warn("[core-insight]", coreFailure);
+    annotation("Core insight failed", coreFailure);
   }
   const { topics, report: topicGeneration } = await synthesizeTopics(unique, items, date, editorialCompletion, previous?.date !== date ? previous?.topics ?? [] : []);
   for (const failure of topicGeneration.failures) {
     warnings.push(`专题「${failure.title}」生成未完成，本期暂未刊出`);
     console.warn(`[editorial] ${failure.title}: ${failure.reason}`);
+    annotation("Trend topic failed", `${failure.title}: ${failure.reason}`);
   }
   if (topicGeneration.status === "insufficient") warnings.push("本期未选出符合跨来源要求的趋势专题");
   const hotRanking = items.filter((i) => i.evidenceQuality === "substantial" && i.publishedAt && now.getTime() - Date.parse(i.publishedAt) <= 7 * 86400000)
