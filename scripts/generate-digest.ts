@@ -66,7 +66,14 @@ importance 1–10，不以 GitHub 总星数或旧闻的重要性冒充新近热�
       try {
         value = await validatedCompletion(prompt, CLASSIFY_MODEL, 6500, CLASSIFICATION_SCHEMA, (value) => { classifiedItems(value, batch, date); return value; });
       } catch (error) {
-        if (batch.length === 1) throw error;
+        if (batch.length === 1) {
+          // Withhold a single unrecoverable article instead of failing the whole
+          // edition; the eight-article minimum below still guards quality.
+          const reason = error instanceof Error ? error.message : "unknown error";
+          console.warn(`[classify] withholding "${batch[0].title}" (${batch[0].id}): ${reason}`);
+          annotation("Classify withheld", `${batch[0].title}: ${reason}`);
+          return [];
+        }
         console.warn(`[classify] retrying ${batch.length} articles individually after batch validation failure`);
         const recovered: DigestItem[] = [];
         for (const article of batch) recovered.push(...await classifyBatch([article]));
