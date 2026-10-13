@@ -81,7 +81,7 @@ export function validateCorePoint(raw: unknown, sources: TopicSource[]): CoreIns
     const byId = new Map(sources.map((s) => [s.id, s]));
     const p = record(raw);
     const title = prose(p.title, "title", 4, 60, false);
-    const fact = prose(p.fact, "fact", 20, 240);
+    const fact = prose(p.fact, "fact", 20, 300);
     const meaning = prose(p.meaning, "meaning", 15, 180);
     const watch = prose(p.watch, "watch", 10, 120);
     if (!Array.isArray(p.sourceIds) || !p.sourceIds.length || p.sourceIds.some((id) => typeof id !== "string" || !byId.has(id))) throw new Error("Unknown core insight source");
