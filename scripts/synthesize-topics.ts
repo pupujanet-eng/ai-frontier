@@ -66,7 +66,7 @@ export async function synthesizeTopics(inputs: ArticleInput[], items: DigestItem
         });
         const sections: TopicSection[] = [];
         for (const section of SECTION_PLAN) {
-          const body = await complete(context + `已确定的判断：${header.thesis}\n现在只写“${section.heading}”这一节，160–230字、完整自然段，至少100字，以完整句子结束。${section.instruction} 避免重复已写各节：${JSON.stringify(sections.map((s) => ({ heading: s.heading, body: s.body })))}。item 只放一个对象，body 是普通文本，sourceIds 只能选材料 ID，每节至少一个来源。`, withSourceIds(TOPIC_SECTION_SCHEMA, idea.sources.map((i) => i.id)), (value) => {
+          const body = await complete(context + `已确定的判断：${header.thesis}\n现在只写“${section.heading}”这一节。写一个完整自然段，字数控制在140–280字之间（不少于120字），必须以句号（。）结束；绝不允许在逗号（，）、顿号（、）、分号（；）、破折号（——）或未完成的从句处停止，宁可写长也不要截断。${section.instruction} 避免重复已写各节：${JSON.stringify(sections.map((s) => ({ heading: s.heading, body: s.body })))}。item 只放一个对象，body 是普通文本，sourceIds 只能选材料 ID，每节至少一个来源。`, withSourceIds(TOPIC_SECTION_SCHEMA, idea.sources.map((i) => i.id)), (value) => {
             if (!Array.isArray(value) || value.length !== 1) throw new Error(`Expected one section: ${section.heading}`);
             const v = value[0];
             const body = textField(v.body, "section body");
