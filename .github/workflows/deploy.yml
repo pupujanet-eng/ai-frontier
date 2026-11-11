@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -53,6 +54,18 @@ jobs:
           path: .digest-cache
           key: model-checkpoints-v1-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: model-checkpoints-v1-
+      - name: Restore daily model budget
+        id: budget
+        if: ${{ env.SKIP_GENERATE != 'true' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await require('./scripts/restore-model-budget.cjs')({ github, context, core });
+      - name: Extract daily model budget
+        if: ${{ steps.budget.outputs.downloaded == 'true' }}
+        env:
+          BUDGET_DATE: ${{ steps.budget.outputs.date }}
+        run: unzip -p .model-budget/restore.zip "$BUDGET_DATE.json" > ".model-budget/$BUDGET_DATE.json"
       - name: Generate daily digest
         if: ${{ env.SKIP_GENERATE != 'true' }}
         timeout-minutes: 50
@@ -60,7 +73,19 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CLASSIFY_MODEL: ${{ vars.CLASSIFY_MODEL || '' }}
           EDITOR_MODEL: ${{ vars.EDITOR_MODEL || '' }}
+          DAILY_MODEL_BUDGET_USD: ${{ vars.DAILY_MODEL_BUDGET_USD || '5' }}
+          DAILY_MODEL_MAX_CALLS: ${{ vars.DAILY_MODEL_MAX_CALLS || '80' }}
+          DAILY_MODEL_MAX_FAILURES: ${{ vars.DAILY_MODEL_MAX_FAILURES || '12' }}
         run: npm run generate
+      - name: Save daily model budget even after failure
+        if: ${{ always() && steps.budget.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-budget-${{ steps.budget.outputs.date }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .model-budget/${{ steps.budget.outputs.date }}.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
       - name: Save validated model checkpoints
         if: ${{ always() && env.SKIP_GENERATE != 'true' }}
         uses: actions/cache/save@v4

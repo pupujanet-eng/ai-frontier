@@ -2,6 +2,7 @@ import type { DigestItem, TopicSection, TrendTopic } from "../src/types";
 import { layerIds, textField, validatedTopics, type ArticleInput } from "./content-utils";
 import { editorialJudgment, topicIssues, completeSentence } from "../src/lib/editorial-quality";
 import { PLAN_SCHEMA, TOPIC_HEADER_SCHEMA, TOPIC_SECTION_SCHEMA, withSourceIds } from "./editorial-schemas";
+import { rethrowCircuit } from "./model-budget";
 
 type Complete = <T>(prompt: string, schema: Record<string, unknown>, validate: (value: unknown) => T) => Promise<T>;
 export interface TopicGeneration { status: "complete" | "partial" | "failed" | "insufficient"; attempted: number; published: number; failures: { title: string; reason: string }[] }
@@ -83,10 +84,12 @@ export async function synthesizeTopics(inputs: ArticleInput[], items: DigestItem
         topics.push(checked);
         console.log(`[editorial] completed: ${checked.title}`);
       } catch (error) {
+        rethrowCircuit(error);
         report.failures.push({ title: idea.title, reason: error instanceof Error ? error.message : "Unknown generation error" });
       }
     }
   } catch (error) {
+    rethrowCircuit(error);
     report.failures.push({ title: "选题规划", reason: error instanceof Error ? error.message : "Unknown planning error" });
   }
   report.published = topics.length;

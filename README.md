@@ -41,6 +41,26 @@ node --env-file=.env.local --import tsx scripts/generate-digest.ts
 
 默认沿用仓库的 Claude Haiku / Sonnet 模型，可用 `CLASSIFY_MODEL`、`EDITOR_MODEL` 覆盖。API 成本取决于实际材料长度和选题数量，不再按旧版短摘要费用估算。
 
+## 模型费用与熔断
+
+按北京时间自然日共享三项阈值，GitHub Actions 仓库 Variables 或本地环境变量可配置：
+
+| 变量 | 默认值 | 行为 |
+| --- | --- | --- |
+| `DAILY_MODEL_BUDGET_USD` | `5` | 下一次请求的预留费用超过当日剩余额度时停止 |
+| `DAILY_MODEL_MAX_CALLS` | `80` | 最多发起 80 次生成请求，包括失败和修复 |
+| `DAILY_MODEL_MAX_FAILURES` | `12` | 累计 12 次内容校验失败后停止，避免反复返工 |
+
+每次生成先调用 Count Tokens，再按输入估算加 10% 与 1,024 token 余量、最大输出 token 预留费用，并在发出付费请求之前原子保存账本。返回后立即按实际 `usage` 结算；未通过内容校验或截断的输出同样入账。账本记录模型、栏目单元、输入/输出及缓存 token、请求 ID、停止原因、估算美元费用，不含 API key 或资料正文。日志输出每次费用与当天累计费用。
+
+SDK 自动重试已关闭。400/401/402/403/404 等非暂时性接口错误立即熔断至下一个北京时间自然日；429、408/409、5xx、网络错误和超时立即结束当前生成，至少冷却 30 分钟后才允许后续定时任务尝试，不在进程内等待重试。没有拿到 usage 的请求保留全部预留费用。熔断异常贯穿分类、单篇兜底、本期洞见和专题循环，不能被当作普通内容错误吞掉。
+
+生产账本独立于可清理的生成缓存，通过 `model-budget-日期-run_id-attempt` Actions artifact 保留 90 天；后续定时、push 与手动重跑恢复同一天最新账本。工作流串行执行；发现当天此前启动过生成却没有可读账本（包括上传失败、取消任务、旧版本无账本），拒绝重新授予预算。首次上线当天若已经运行过旧生成流程，会等到下一北京时间自然日再开始付费生成。恢复或保存失败也停止；不能通过清缓存、再次点击运行来重置额度。代码升级的 `[deploy cached]` 部署不触发模型调用。
+
+预算按 Haiku 4.5 输入/输出 $1/$5、Sonnet 4.6 $3/$15 每百万 token 的标准价格估算；具体见 [官方价格](https://platform.claude.com/docs/en/about-claude/pricing)。只允许代码价格表中已核对的模型，切换其他模型需同时维护价格。Count Tokens 是估算，供应商价格、账单调整和未知超时用量意味着此控制不是供应商侧绝对账单限额。该预算只约束本流水线，不覆盖其他程序共用 API key 的消费。并行本地进程不受 Actions 串行锁保护，请勿同时运行本地生成。
+
+达到阈值或发生故障时退出失败，不覆盖线上上一期；本期洞见和至少一个完整趋势专题的发布门槛保持不变。排查时先查看 `[model-usage]` 日志和当天 `model-budget` artifact，不要删除账本或放宽内容校验来强行发布。金额阈值不代表保证每天能在该金额内完成日报。
+
 ## 部署
 
 GitHub Settings → Secrets and variables → Actions 配置 `ANTHROPIC_API_KEY`。Pages Source 选择 GitHub Actions。

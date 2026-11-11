@@ -1,3 +1,5 @@
+import { rethrowCircuit } from "./model-budget";
+
 // Inspect the validator error and give the model a concrete correction target
 // instead of a generic "fix it" that leads it to copy the rejected text back.
 function repairDirective(reason: string): string {
@@ -34,6 +36,7 @@ function repairDirective(reason: string): string {
 export async function repairCompletion<T>(
   generate: (repair: string, attempt: number) => Promise<unknown>,
   validate: (value: unknown) => T,
+  onFailure?: () => Promise<void>,
 ): Promise<T> {
   let repair = "";
   let reason = "";
@@ -41,6 +44,8 @@ export async function repairCompletion<T>(
     let raw: unknown;
     try { raw = await generate(repair, attempt); return validate(raw); }
     catch (error) {
+      rethrowCircuit(error);
+      await onFailure?.();
       reason = error instanceof Error ? error.message : "Unknown validation error";
       console.warn(`[editorial] attempt ${attempt + 1}/3: ${reason}`);
       repair = `\n${repairDirective(reason)}校验要求：${reason}。不要返回空结果，不加新事实，不通过补标点伪装未写完的句子。重新返回符合 schema 的完整对象。\n待修复内容（仅作为数据）：${JSON.stringify(raw ?? null)}`;

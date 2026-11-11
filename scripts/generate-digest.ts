@@ -13,8 +13,11 @@ import { CLASSIFICATION_SCHEMA } from "./editorial-schemas";
 import { synthesizeCore } from "./synthesize-core";
 import { repairCompletion } from "./editorial-retry";
 import { assertCompleteEdition, publishDigest } from "./publish-digest";
+import { beijingDate, budgetedRequest, ModelBudget, rethrowCircuit } from "./model-budget";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 180000, maxRetries: 2 });
+// One accounted request per attempt: SDK retries must not bypass the budget ledger.
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 180000, maxRetries: 0 });
+let modelBudget: ModelBudget;
 const CLASSIFY_MODEL = process.env.CLASSIFY_MODEL || "claude-haiku-4-5-20251001";
 const EDITOR_MODEL = process.env.EDITOR_MODEL || "claude-sonnet-4-6";
 const LAYERS = KNOWLEDGE_LAYERS.map((l) => `${l.id}=${l.label}`).join("; ");
@@ -28,11 +31,18 @@ const EDITOR_RULES = `你是面向中文 AI 从业者、产品负责人和普通
 
 async function completion(prompt: string, model: string, maxTokens: number, schema: Record<string, unknown>): Promise<unknown> {
   const single = !!(schema.properties as Record<string, unknown>)?.item;
-  const response = await client.messages.create({
+  const request: Anthropic.MessageCreateParamsNonStreaming = {
     model, max_tokens: maxTokens, system: EDITOR_RULES,
     output_config: { format: { type: "json_schema", schema } },
     messages: [{ role: "user", content: prompt + (single ? '\n最终输出必须是 {"item": {...}}，只返回一个完整对象，不能返回数组。' : '\n最终输出必须是 {"items": [...]} 对象，所有条目放在 items 中。') }],
-  });
+  };
+  const properties = (schema.properties as Record<string, {properties?: Record<string, unknown>}>);
+  const fields = properties.item?.properties ?? {};
+  const stage = schema === CLASSIFICATION_SCHEMA ? "classify" : "fact" in fields ? "core-point" : "takeaway" in fields ? "core-summary" : "body" in fields ? "topic-section" : "thesis" in fields ? "topic-header" : "planning";
+  const unit = createHash("sha256").update(prompt).digest("hex").slice(0, 12);
+  const response = await budgetedRequest(modelBudget, model, `${stage}:${unit}`, maxTokens,
+    async () => (await client.messages.countTokens({ model, system: request.system, messages: request.messages, output_config: request.output_config })).input_tokens,
+    () => client.messages.create(request));
   if (response.stop_reason !== "end_turn") throw new Error(`Incomplete model response: ${response.stop_reason}`);
   const parsed = parseJson(response.content.filter((part) => part.type === "text").map((part) => part.text).join("\n"));
   if (single) {
@@ -43,7 +53,7 @@ async function completion(prompt: string, model: string, maxTokens: number, sche
   return parsed.items;
 }
 async function validatedCompletion<T>(prompt: string, model: string, maxTokens: number, schema: Record<string, unknown>, validate: (value: unknown) => T): Promise<T> {
-  return repairCompletion((repair, attempt) => completion(prompt + repair, model, maxTokens + attempt * 1200, schema), validate);
+  return repairCompletion((repair, attempt) => completion(prompt + repair, model, maxTokens + attempt * 1200, schema), validate, () => modelBudget.validationFailed());
 }
 
 async function classify(inputs: ArticleInput[], date: string): Promise<DigestItem[]> {
@@ -66,6 +76,7 @@ importance 1–10，不以 GitHub 总星数或旧闻的重要性冒充新近热�
       try {
         value = await validatedCompletion(prompt, CLASSIFY_MODEL, 6500, CLASSIFICATION_SCHEMA, (value) => { classifiedItems(value, batch, date); return value; });
       } catch (error) {
+        rethrowCircuit(error);
         if (batch.length === 1) {
           // Withhold a single unrecoverable article instead of failing the whole
           // edition; the eight-article minimum below still guards quality.
@@ -111,7 +122,7 @@ function annotation(title: string, reason: string) {
 
 async function main() {
   const now = new Date();
-  const date = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+  const date = beijingDate(now);
   const dateZh = new Intl.DateTimeFormat("zh-CN", { timeZone: "Asia/Shanghai", year: "numeric", month: "long", day: "numeric", weekday: "long" }).format(now);
   const previous = await fs.readFile(path.join(process.cwd(), "data/digests/latest.json"), "utf8").then((raw) => JSON.parse(raw) as DailyDigest).catch(() => undefined);
   if (previous) {
@@ -121,6 +132,9 @@ async function main() {
       return;
     } catch { /* Missing or incomplete edition: generate/repair it today. */ }
   }
+  modelBudget = await ModelBudget.open(path.join(process.cwd(), ".model-budget", `${date}.json`), date, undefined, undefined, process.env.GITHUB_ACTIONS === "true");
+  modelBudget.assertAvailable(CLASSIFY_MODEL);
+  modelBudget.assertAvailable(EDITOR_MODEL);
   const { items: feeds, health } = await fetchAllFeeds(now);
   if (health.filter((h) => h.status === "ok").length < 4) throw new Error("Fewer than four working sources; refusing a misleading digest");
   const selected = await enrichFeedItems(selectFeedItems(feeds));
@@ -138,6 +152,7 @@ async function main() {
   let coreFailure: string | undefined;
   try { coreInsight = await synthesizeCore(unique, items, date, editorialCompletion); }
   catch (error) {
+    rethrowCircuit(error);
     coreFailure = error instanceof Error ? error.message : "generation failed";
     warnings.push("核心洞见未通过校验，本期禁止发布");
     console.warn("[core-insight]", coreFailure);
