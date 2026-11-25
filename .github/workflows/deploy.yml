@@ -9,6 +9,10 @@ on:
         description: "跳过生成，使用最近保存的日报构建"
         type: boolean
         default: false
+      resume_model_service:
+        description: "已更新 API key 或恢复服务：解除接口错误熔断，保留当日用量和预算限制"
+        type: boolean
+        default: false
   push:
     branches: ["main"]
 
@@ -54,6 +58,33 @@ jobs:
           path: .digest-cache
           key: model-checkpoints-v1-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: model-checkpoints-v1-
+      - name: Check restored edition
+        id: edition_cache
+        continue-on-error: true
+        run: npx tsx scripts/verify-edition.ts
+      - name: Restore verified edition archive
+        if: ${{ steps.edition_cache.outcome == 'failure' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('node:fs/promises');
+            const artifacts = await github.paginate(github.rest.actions.listArtifactsForRepo, {...context.repo, per_page: 100});
+            const candidates = artifacts.filter(a => a.name.startsWith('digest-data-') && !a.expired).sort((a,b) => b.id-a.id).slice(0,5);
+            let recovered = false;
+            for (const artifact of candidates) {
+              try {
+                const archive = await github.rest.actions.downloadArtifact({...context.repo, artifact_id: artifact.id, archive_format: 'zip'});
+                await fs.writeFile('/tmp/verified-editions.zip', Buffer.from(archive.data));
+                await exec.exec('python3', ['scripts/extract-editions.py', '/tmp/verified-editions.zip', '/tmp/verified-editions']);
+                await exec.exec('npx', ['tsx', 'scripts/verify-edition.ts', '/tmp/verified-editions/digests/latest.json']);
+                await fs.cp('/tmp/verified-editions/digests', 'data/digests', {recursive: true});
+                await fs.copyFile('/tmp/verified-editions/github-seen.json', 'data/github-seen.json').catch(() => {});
+                core.notice(`Recovered verified edition archive ${artifact.id}`);
+                recovered = true;
+                break;
+              } catch { core.warning(`Archive ${artifact.id} could not be verified; trying an older snapshot`); }
+            }
+            if (!recovered) core.setFailed('No verified edition archive is available; keep the currently published site');
       - name: Restore daily model budget
         id: budget
         if: ${{ env.SKIP_GENERATE != 'true' }}
@@ -76,6 +107,7 @@ jobs:
           DAILY_MODEL_BUDGET_USD: ${{ vars.DAILY_MODEL_BUDGET_USD || '5' }}
           DAILY_MODEL_MAX_CALLS: ${{ vars.DAILY_MODEL_MAX_CALLS || '80' }}
           DAILY_MODEL_MAX_FAILURES: ${{ vars.DAILY_MODEL_MAX_FAILURES || '12' }}
+          RESUME_MODEL_SERVICE: ${{ github.event_name == 'workflow_dispatch' && inputs.resume_model_service && 'true' || 'false' }}
         run: npm run generate
       - name: Save daily model budget even after failure
         if: ${{ always() && steps.budget.outcome == 'success' }}

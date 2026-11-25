@@ -86,6 +86,13 @@ export class ModelBudget {
     return budget;
   }
   get chargedUsd() { return this.state.entries.reduce((sum, e) => sum + (e.actualUsd ?? e.reservedUsd), 0); }
+  async resumeService() {
+    if (!this.state.circuit) return;
+    if (!/^Model service (?:\d{3}|transport\/timeout) error;/.test(this.state.circuit.reason)) throw new CircuitOpenError("Only a service-error circuit can be resumed; daily budget and usage remain unchanged");
+    delete this.state.circuit;
+    await this.save();
+    this.assertAvailable();
+  }
   private async save() {
     try {
       await fs.mkdir(path.dirname(this.file), { recursive: true });

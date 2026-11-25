@@ -1,10 +1,10 @@
 {
   "name": "ai-frontier",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "tsx scripts/prepare-editions.ts && next build",
     "start": "next start",
     "lint": "eslint",
     "generate": "npx tsx scripts/generate-digest.ts",

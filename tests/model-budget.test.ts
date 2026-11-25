@@ -78,6 +78,14 @@ test("429, timeout and 5xx stop current run; cooldown preserves uncertain spendi
     } finally { await fs.rm(f.dir, { recursive: true, force: true }); }
   }
 });
+test("manual service recovery preserves charged usage and cannot reset a spending circuit", async()=>{
+  const f=await fixture();const capped=await fixture(0.01);
+  try {
+    await assert.rejects(budgetedRequest(f.budget,model,"core",2400,async()=>1000,async()=>{throw {status:401};}),CircuitOpenError);
+    const charged=f.budget.chargedUsd;await f.budget.resumeService();assert.equal(f.budget.chargedUsd,charged);assert.equal(f.budget.state.entries.length,1);assert.doesNotThrow(()=>f.budget.assertAvailable());
+    await assert.rejects(capped.budget.reserve(model,"core",1000,2400),CircuitOpenError);await assert.rejects(capped.budget.resumeService(),/Only a service-error/);
+  }finally{await fs.rm(f.dir,{recursive:true,force:true});await fs.rm(capped.dir,{recursive:true,force:true});}
+});
 test("call limit, missing/corrupt ledger, unpriced model and invalid limits fail closed", async () => {
   const f = await fixture(5, 1);
   try {

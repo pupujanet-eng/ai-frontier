@@ -34,7 +34,7 @@ export interface ArticleInput {
   category: DigestItem["category"]; kind: SourceKind; publishedAt?: string;
 }
 export function classifiedItems(value: unknown, inputs: ArticleInput[], date: string): DigestItem[] {
-  if (!Array.isArray(value) || value.length !== inputs.length) throw new Error("Incomplete classification batch");
+  if (!Array.isArray(value) || value.length !== inputs.length) throw new Error(`Incomplete classification batch: expected ${inputs.length} results, received ${Array.isArray(value) ? value.length : "non-array"}; return every input ID, using include=false for excluded articles`);
   const byId = new Map(inputs.map((item) => [item.id, item]));
   const seen = new Set<string>();
   return value.flatMap((p) => {

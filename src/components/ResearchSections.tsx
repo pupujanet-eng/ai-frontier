@@ -5,11 +5,14 @@ import { SectionHeader } from "./SectionHeader";
 import { useState } from "react";
 import type { DailyDigest, DigestItem, KnowledgeLayer, TrendTopic } from "@/types";
 import { KNOWLEDGE_EDGES, KNOWLEDGE_LAYERS, layersForItem } from "@/lib/knowledge";
+import { ReaderActions } from "./ReaderActions";
+import { useReader } from "./ReaderProvider";
+import { topicSnapshot } from "@/lib/reader-data";
 
 const KIND = { primary: "一手资料", reporting: "媒体报道", analysis: "分析 / 访谈", community: "社区信号" };
 const SECTION_KIND = { fact: "材料陈述", analysis: "分析判断", uncertainty: "证据边界" };
 
-export function TopicCard({ topic }: { topic: TrendTopic }) {
+export function TopicCard({ topic, editionDate }: { topic: TrendTopic; editionDate: string }) {
   return <article id={`topic-${topic.id}`} data-reader-card tabIndex={-1} className="topic-card digest-card digest-card-padding">
     <div className="digest-meta flex flex-wrap items-center gap-x-2 gap-y-1 mb-2.5">
       <span className="digest-badge">{topic.origin === "curated" ? "编辑精选" : "多源综合"}</span>
@@ -30,22 +33,24 @@ export function TopicCard({ topic }: { topic: TrendTopic }) {
         <div className="digest-divider pt-4"><h4 className="digest-subheading mb-3">来源档案 · 多个域名不等于独立验证</h4><ul className="space-y-2">{topic.sources.map((source) => <li key={source.id} className="digest-caption"><span className="text-[var(--text-muted)]">{KIND[source.kind]} · {source.publishedAt?.slice(0,10) || "日期未标注"} · </span><a href={source.url} target="_blank" rel="noopener noreferrer" className="digest-link">{source.title}</a></li>)}</ul></div>
       </div>
     </details>
+    <ReaderActions snapshot={topicSnapshot(topic)} editionDate={editionDate}/>
   </article>;
 }
-export function TrendSection({ topics, background = [], generation }: { topics: TrendTopic[]; background?: TrendTopic[]; generation?: DailyDigest["topicGeneration"] }) {
+export function TrendSection({ date, topics, background = [], generation }: { date:string; topics: TrendTopic[]; background?: TrendTopic[]; generation?: DailyDigest["topicGeneration"] }) {
   const failed = generation?.status === "failed" || generation?.status === "partial";
   return <section id="trends" className="scroll-mt-28 mb-8">
     <SectionHeader icon="✦" title="趋势专题" count={topics.length} note="本期更新 · 把事件连起来看" />
-    {topics.length ? <div className="space-y-4">{topics.map((topic) => <TopicCard key={topic.id} topic={topic}/>)}</div> : <p className="digest-empty">{failed || !generation ? "本期新专题尚未完成生成与校验。下方背景深读保留原核对日期，不作为今日更新。" : "本期尚未选出证据充分的跨来源专题。可先阅读资讯与背景深读。"}</p>}
+    {topics.length ? <div className="space-y-4">{topics.map((topic) => <TopicCard key={topic.id} topic={topic} editionDate={date}/>)}</div> : <p className="digest-empty">{failed || !generation ? "本期新专题尚未完成生成与校验。下方背景深读保留原核对日期，不作为今日更新。" : "本期尚未选出证据充分的跨来源专题。可先阅读资讯与背景深读。"}</p>}
     {failed && topics.length > 0 && <p className="digest-caption mt-3">本期已刊出 {topics.length} 篇专题，其余选题仍待完成校验。</p>}
     {background.length > 0 && <details className="trend-library digest-disclosure mt-4">
       <summary className="digest-disclosure-toggle">背景深读 · {background.length} 篇已刊专题（保留原日期）</summary>
       <p className="digest-caption my-3">用于补充背景，默认收起；不计入本期新增专题。</p>
-      <div className="space-y-4">{background.map((topic) => <TopicCard key={topic.id} topic={topic}/>)}</div>
+      <div className="space-y-4">{background.map((topic) => <TopicCard key={topic.id} topic={topic} editionDate={date}/>)}</div>
     </details>}
   </section>;
 }
 export function KnowledgeGraph({ items, topics }: { items: DigestItem[]; topics: TrendTopic[] }) {
+  const {data}=useReader();
   const [selected, setSelected] = useState<KnowledgeLayer>("agents");
   const layer = KNOWLEDGE_LAYERS.find((l) => l.id === selected)!;
   const related = items.filter((i) => layersForItem(i).includes(selected));
@@ -60,7 +65,7 @@ export function KnowledgeGraph({ items, topics }: { items: DigestItem[]; topics:
           {KNOWLEDGE_EDGES.map((edge) => { const a = KNOWLEDGE_LAYERS.findIndex((l) => l.id === edge.from); const b = KNOWLEDGE_LAYERS.findIndex((l) => l.id === edge.to); const active = edge.from === selected || edge.to === selected; return <line key={`${a}-${b}`} x1={100 + a % 3 * 200} y1={a < 3 ? 50 : 170} x2={100 + b % 3 * 200} y2={b < 3 ? 50 : 170} stroke={active ? "var(--border-strong)" : "var(--border-light)"} strokeWidth={active ? 2 : 1} />; })}
         </svg>
         {KNOWLEDGE_LAYERS.map((node) => <button key={node.id} aria-pressed={selected === node.id} aria-controls="knowledge-detail" onClick={() => setSelected(node.id)} className={`knowledge-node ${selected === node.id ? "is-selected" : ""}`}>
-          <span className="digest-subheading">{node.label}</span><span className="knowledge-node-caption">{node.question}</span>
+          <span className="digest-subheading">{data.records.some((r)=>r.read.value&&r.snapshot.layers.includes(node.id))?"✦ ":""}{node.label}</span><span className="knowledge-node-caption">{node.question}</span><span className="knowledge-node-caption">已读 {data.records.filter((r)=>r.read.value&&r.snapshot.layers.includes(node.id)).length} · 收藏 {data.records.filter((r)=>r.saved.value&&r.snapshot.layers.includes(node.id)).length}</span>
         </button>)}
       </div>
       <div id="knowledge-detail" className="digest-divider mt-5 pt-5" aria-live="polite">
@@ -69,7 +74,7 @@ export function KnowledgeGraph({ items, topics }: { items: DigestItem[]; topics:
           <span className="digest-subheading block">{KNOWLEDGE_LAYERS.find((l) => l.id === edge.from)?.label} → {KNOWLEDGE_LAYERS.find((l) => l.id === edge.to)?.label} · {edge.label}</span><span className="block digest-caption mt-1">{edge.explanation}</span>
         </button>; })}</div>
         <div className="mt-5"><h4 className="digest-subheading mb-3">相关专题 {relatedTopics.length} · 关联资讯 {related.length}</h4>
-          {relatedTopics.map((topic) => <a key={topic.id} href={`#topic-${topic.id}`} className="digest-link digest-body block py-2">专题 · {topic.title} ↗</a>)}
+          {relatedTopics.map((topic) => <a key={topic.id} href={`#topic-${topic.id}`} onClick={() => { const card=document.getElementById(`topic-${topic.id}`);const parent=card?.closest("details");if(parent)parent.open=true; }} className="digest-link digest-body block py-2">专题 · {topic.title} ↗</a>)}
           <ul className="knowledge-related">{related.slice(0,8).map((item) => <li key={item.id} className="py-2 digest-caption"><a href={item.url} target="_blank" rel="noopener noreferrer" className="digest-link">{item.titleZh || item.title} ↗</a><span className="digest-meta ml-2">{item.source}</span></li>)}</ul>
           {!related.length && !relatedTopics.length && <p className="digest-caption">本期暂无直接关联材料；概念节点保留，便于继续积累。</p>}
         </div>

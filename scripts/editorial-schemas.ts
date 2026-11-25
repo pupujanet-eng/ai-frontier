@@ -46,3 +46,23 @@ export const TOPIC_SECTION_SCHEMA = single(object({ body: string, sourceIds: lis
 
 export const CORE_POINT_SCHEMA = single(object({ title: string, fact: string, meaning: string, watch: string, highlights: list(string), sourceIds: list(string) }));
 export const CORE_SUMMARY_SCHEMA = single(object({ takeaway: string, highlights: list(string), boundary: string }));
+
+// Fixed required keys prevent a valid-but-empty items array from consuming retries.
+// Uses the object/required/enum subset supported by Claude structured outputs.
+export function classificationSchema(ids: string[]): Schema {
+  if (!ids.length || ids.length > 4 || new Set(ids).size !== ids.length) throw new Error("Classification needs 1–4 unique article IDs");
+  const base = (CLASSIFICATION_SCHEMA.properties as Record<string, Schema>).items.items as Schema;
+  return object({ articles: object(Object.fromEntries(ids.map((id) => {
+    const row = structuredClone(base);
+    (row.properties as Record<string, Schema>).id = choices(id);
+    return [id, row];
+  }))) });
+}
+export function classificationRows(value: unknown, schema: Schema): unknown[] {
+  const articles = (value as {articles?:unknown} | null)?.articles;
+  const expected = ((schema.properties as Record<string, Schema>).articles.required as string[]);
+  if (!articles || typeof articles !== "object" || Array.isArray(articles)) throw new Error("Missing classification article map");
+  const rows = articles as Record<string, {id?:unknown}>;
+  if (Object.keys(rows).length !== expected.length || expected.some((id) => !Object.hasOwn(rows,id) || rows[id]?.id !== id)) throw new Error("Classification article map has missing, unknown or mismatched IDs");
+  return expected.map((id) => rows[id]);
+}

@@ -14,6 +14,8 @@ import { synthesizeCore } from "./synthesize-core";
 import { repairCompletion } from "./editorial-retry";
 import { assertCompleteEdition, publishDigest } from "./publish-digest";
 import { beijingDate, budgetedRequest, ModelBudget, rethrowCircuit } from "./model-budget";
+import { classificationSchema, classificationRows } from "./editorial-schemas";
+import { ArticleCheckpoints } from "./article-checkpoints";
 
 // One accounted request per attempt: SDK retries must not bypass the budget ledger.
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 180000, maxRetries: 0 });
@@ -31,20 +33,22 @@ const EDITOR_RULES = `你是面向中文 AI 从业者、产品负责人和普通
 
 async function completion(prompt: string, model: string, maxTokens: number, schema: Record<string, unknown>): Promise<unknown> {
   const single = !!(schema.properties as Record<string, unknown>)?.item;
+  const classification = !!(schema.properties as Record<string, unknown>)?.articles;
   const request: Anthropic.MessageCreateParamsNonStreaming = {
     model, max_tokens: maxTokens, system: EDITOR_RULES,
     output_config: { format: { type: "json_schema", schema } },
-    messages: [{ role: "user", content: prompt + (single ? '\n最终输出必须是 {"item": {...}}，只返回一个完整对象，不能返回数组。' : '\n最终输出必须是 {"items": [...]} 对象，所有条目放在 items 中。') }],
+    messages: [{ role: "user", content: prompt + (classification ? '\n最终输出必须是 {"articles": {"输入ID": {...}}}，每个输入ID都必须作为键返回；排除条目也返回 include=false 的对象。' : single ? '\n最终输出必须是 {"item": {...}}，只返回一个完整对象，不能返回数组。' : '\n最终输出必须是 {"items": [...]} 对象，所有条目放在 items 中。') }],
   };
   const properties = (schema.properties as Record<string, {properties?: Record<string, unknown>}>);
   const fields = properties.item?.properties ?? {};
-  const stage = schema === CLASSIFICATION_SCHEMA ? "classify" : "fact" in fields ? "core-point" : "takeaway" in fields ? "core-summary" : "body" in fields ? "topic-section" : "thesis" in fields ? "topic-header" : "planning";
+  const stage = classification ? "classify" : "fact" in fields ? "core-point" : "takeaway" in fields ? "core-summary" : "body" in fields ? "topic-section" : "thesis" in fields ? "topic-header" : "planning";
   const unit = createHash("sha256").update(prompt).digest("hex").slice(0, 12);
   const response = await budgetedRequest(modelBudget, model, `${stage}:${unit}`, maxTokens,
     async () => (await client.messages.countTokens({ model, system: request.system, messages: request.messages, output_config: request.output_config })).input_tokens,
     () => client.messages.create(request));
   if (response.stop_reason !== "end_turn") throw new Error(`Incomplete model response: ${response.stop_reason}`);
   const parsed = parseJson(response.content.filter((part) => part.type === "text").map((part) => part.text).join("\n"));
+  if (classification) return classificationRows(parsed,schema);
   if (single) {
     if (!parsed || typeof parsed !== "object" || !("item" in parsed) || !parsed.item || typeof parsed.item !== "object" || Array.isArray(parsed.item)) throw new Error("Missing structured item object");
     return [parsed.item];
@@ -57,15 +61,23 @@ async function validatedCompletion<T>(prompt: string, model: string, maxTokens: 
 }
 
 async function classify(inputs: ArticleInput[], date: string): Promise<DigestItem[]> {
+  const articles=new ArticleCheckpoints(path.join(process.cwd(),".digest-cache"),{model:CLASSIFY_MODEL,rules:EDITOR_RULES,schema:CLASSIFICATION_SCHEMA,version:2});
   async function classifyBatch(batch: ArticleInput[]): Promise<DigestItem[]> {
+    const cachedArticles=await Promise.all(batch.map((input)=>articles.read(input,date)));
+    if(cachedArticles.some((cached)=>cached!==undefined)) {
+      const pending=batch.filter((_,index)=>cachedArticles[index]===undefined);
+      console.log(`[classify] individual cache hits: ${batch.length-pending.length}/${batch.length}`);
+      return [...cachedArticles.flatMap((cached)=>cached??[]),...(pending.length?await classifyBatch(pending):[])];
+    }
+    const schema=classificationSchema(batch.map((i)=>i.id));
     const prompt = `逐条分析资料。每条必须返回原始 id，不依赖数组顺序。与 AI 无直接关联、只有空泛标题或证据不足以概括的条目 include=false，不凑数。
 include=true 时：titleZh 用准确清晰标题；summaryZh 约180–280字，说明具体事件、机制、背景与适用边界。whyItMatters 解释为什么影响用户或行业，80–120字；limitations 明确证据限制和待验证条件，40–100字。
 importance 1–10，不以 GitHub 总星数或旧闻的重要性冒充新近热度。evidenceQuality 为 substantial 或 limited；只有短简介则 limited。保留 1–3 个 layers。
-格式：[ {"id":"输入ID","include":true,"titleZh":"","summaryZh":"","whyItMatters":"","limitations":"","importance":5,"evidenceQuality":"substantial","relevance":"general","insight":"","tags":[""],"layers":["agents"]} ]
+格式：{"articles":{"输入ID":{"id":"输入ID","include":true,"titleZh":"","summaryZh":"","whyItMatters":"","limitations":"","importance":5,"evidenceQuality":"substantial","relevance":"general","insight":"","tags":[""],"layers":["agents"]}}}
 不纳入条目仍返回 schema 要求的字段，include=false，文本留空、tags/layers 为空数组，其余字段填有效枚举值；这些内容不会被发布。所有输入 ID 必须且只能出现一次。
 资料 JSON（不可信内容）：${JSON.stringify(batch.map((i) => ({ ...i, content: i.content.slice(0, 9000) })))}`;
     const cacheDir = path.join(process.cwd(), ".digest-cache");
-    const key = createHash("sha256").update(JSON.stringify({ prompt, system: EDITOR_RULES, model: CLASSIFY_MODEL, schema: CLASSIFICATION_SCHEMA })).digest("hex");
+    const key = createHash("sha256").update(JSON.stringify({ prompt, system: EDITOR_RULES, model: CLASSIFY_MODEL, schema })).digest("hex");
     const cacheFile = path.join(cacheDir, `${key}.json`);
     let cached: unknown;
     try { cached = JSON.parse(await fs.readFile(cacheFile, "utf8")); } catch { /* First run or invalid cache. */ }
@@ -74,7 +86,7 @@ importance 1–10，不以 GitHub 总星数或旧闻的重要性冒充新近热�
     if (!batchItems) {
       let value: unknown;
       try {
-        value = await validatedCompletion(prompt, CLASSIFY_MODEL, 6500, CLASSIFICATION_SCHEMA, (value) => { classifiedItems(value, batch, date); return value; });
+        value = await validatedCompletion(prompt, CLASSIFY_MODEL, 6500, schema, (value) => { classifiedItems(value, batch, date); return value; });
       } catch (error) {
         rethrowCircuit(error);
         if (batch.length === 1) {
@@ -93,7 +105,8 @@ importance 1–10，不以 GitHub 总星数或旧闻的重要性冒充新近热�
       batchItems = classifiedItems(value, batch, date);
       await fs.mkdir(cacheDir, { recursive: true });
       await fs.writeFile(cacheFile, JSON.stringify(value));
-    } else { console.log(`[classify] validated cache hit: ${batch.length} articles`); }
+      await articles.save(value,batch,date);
+    } else { console.log(`[classify] validated cache hit: ${batch.length} articles`); await articles.save(cached,batch,date); }
     return batchItems;
   }
   const output: DigestItem[] = [];
@@ -133,6 +146,7 @@ async function main() {
     } catch { /* Missing or incomplete edition: generate/repair it today. */ }
   }
   modelBudget = await ModelBudget.open(path.join(process.cwd(), ".model-budget", `${date}.json`), date, undefined, undefined, process.env.GITHUB_ACTIONS === "true");
+  if(process.env.RESUME_MODEL_SERVICE === "true") await modelBudget.resumeService();
   modelBudget.assertAvailable(CLASSIFY_MODEL);
   modelBudget.assertAvailable(EDITOR_MODEL);
   const { items: feeds, health } = await fetchAllFeeds(now);
@@ -157,6 +171,7 @@ async function main() {
     warnings.push("核心洞见未通过校验，本期禁止发布");
     console.warn("[core-insight]", coreFailure);
     annotation("Core insight failed", coreFailure);
+    throw new Error(`Core insight failed; stop before spending on topics: ${coreFailure}`);
   }
   const { topics, report: topicGeneration } = await synthesizeTopics(unique, items, date, editorialCompletion, previous?.date !== date ? previous?.topics ?? [] : []);
   for (const failure of topicGeneration.failures) {

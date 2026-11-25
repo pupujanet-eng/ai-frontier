@@ -44,3 +44,4 @@ next-env.d.ts
 # Validated model output checkpoints (never secrets)
 /.digest-cache/
 /.model-budget/
+/public/editions/

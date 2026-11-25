@@ -25,6 +25,7 @@ export interface DigestItem {
 }
 
 export interface DailyDigest {
+  comparison?: { date: string; items: Record<string, "new" | "updated" | "repeat"> };
   date: string;
   dateZh: string;
   schemaVersion?: number;

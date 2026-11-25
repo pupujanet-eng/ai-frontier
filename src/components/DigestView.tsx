@@ -8,6 +8,11 @@ import { CoreInsight } from "./CoreInsight";
 import { SectionHeader } from "./SectionHeader";
 import { KeyboardHelp, useReaderKeyboard } from "./useReaderKeyboard";
 import { DigestText } from "./DigestText";
+import { ReaderProvider } from "./ReaderProvider";
+import { ReaderActions } from "./ReaderActions";
+import { PersonalDesk } from "./PersonalDesk";
+import { articleSnapshot } from "@/lib/reader-data";
+import { ChangeBadge, EditionChanges } from "./EditionChanges";
 
 /* ─────────────────────────────────────────
    Constants
@@ -31,6 +36,7 @@ const LABEL_TYPE_NAMES: Record<string, string> = {
 };
 
 const SECTIONS = [
+  { id: "personal", label: "我的阅读", icon: "☆", key: "0" },
   { id: "trends", label: "趋势专题", icon: "✦", key: "8" },
   { id: "knowledge", label: "知识图谱", icon: "⌘", key: "9" },
   { id: "hot-ranking", label: "全球热榜",  icon: "▲",  key: "1" },
@@ -103,6 +109,7 @@ function ItemCard({
             <span className="text-[11px] font-mono text-[var(--text-muted)] shrink-0">{String(rank + 1).padStart(2, "0")}</span>
           )}
           <LabelTypeBadge labelType={item.labelType} />
+          <ChangeBadge id={item.id}/>
           <RelevanceBadge relevance={item.relevance} />
           {showImportance && <ImportanceBar score={item.importance ?? 5} />}
         </div>
@@ -130,6 +137,7 @@ function ItemCard({
         )}
 
         <ArticleDepth item={item} />
+        <ReaderActions snapshot={articleSnapshot(item)} editionDate={item.date}/>
         {/* footer */}
         <div className="flex items-center justify-between gap-2 mt-1">
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -174,6 +182,7 @@ function HotRankingCard({ item, index }: { item: DigestItem; index: number }) {
           </span>
           <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
             <LabelTypeBadge labelType={item.labelType} />
+            <ChangeBadge id={item.id}/>
             <RelevanceBadge relevance={item.relevance} />
           </div>
           <ImportanceBar score={item.importance ?? 5} />
@@ -202,6 +211,7 @@ function HotRankingCard({ item, index }: { item: DigestItem; index: number }) {
         )}
 
         <ArticleDepth item={item} />
+        <ReaderActions snapshot={articleSnapshot(item)} editionDate={item.date}/>
         {/* footer */}
         <div className="flex items-center justify-between gap-2 mt-1">
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -379,7 +389,7 @@ function MobileTabNav({ activeSection, counts, navigate }: { activeSection: stri
               }`}
             >
               {label}
-              {active && <span className="text-[11px] opacity-60">{count}</span>}
+              {active && id !== "personal" && <span className="text-[11px] opacity-60">{count}</span>}
             </button>
           );
         })}
@@ -417,7 +427,7 @@ function DesktopSidebar({
                 <span className="text-[12px] font-medium">{label}</span>
               </div>
               <div className="flex items-center gap-1">
-                <span className={`text-[11px] font-mono ${active ? "opacity-60" : "text-[var(--text-muted)]"}`}>{count}</span>
+                {id !== "personal" && <span className={`text-[11px] font-mono ${active ? "opacity-60" : "text-[var(--text-muted)]"}`}>{count}</span>}
                 <kbd className={`text-[11px] border rounded px-1 hidden group-hover:inline ${active ? "border-white/20 text-white/50" : "border-[var(--border-light)] text-[var(--text-muted)]"}`}>{key}</kbd>
               </div>
             </button>
@@ -427,7 +437,7 @@ function DesktopSidebar({
 
       <div className="mt-4 pt-4 border-t border-[var(--border-subtle)] pb-6">
         <p className="text-[11px] text-[var(--text-muted)] mb-2 font-medium uppercase tracking-wider">快捷键</p>
-        {[["j/k","逐条阅读"],["PgUp/Dn","翻页"],["1–9","跳转"],["/","搜索"],["?","帮助"]].map(([k, d]) => (
+        {[["j/k","逐条阅读"],["PgUp/Dn","翻页"],["0–9","跳转"],["/","搜索"],["?","帮助"]].map(([k, d]) => (
           <div key={k} className="flex items-center justify-between mb-1.5">
             <kbd className="text-[11px] text-[var(--text-secondary)] bg-[var(--bg-inset)] border border-[var(--border-light)] rounded px-1.5 py-0.5 font-mono">{k}</kbd>
             <span className="text-[11px] text-[var(--text-muted)]">{d}</span>
@@ -442,7 +452,10 @@ function DesktopSidebar({
    Main DigestView
 ───────────────────────────────────────── */
 
-export function DigestView({ digest }: { digest: DailyDigest }) {
+export function DigestView({digest,editionControls}:{digest:DailyDigest;editionControls?:React.ReactNode}) {
+  return <ReaderProvider><EditionChanges.Provider value={digest.comparison}><DigestContent key={digest.date} digest={digest} editionControls={editionControls}/></EditionChanges.Provider></ReaderProvider>;
+}
+function DigestContent({ digest, editionControls }: { digest: DailyDigest; editionControls?:React.ReactNode }) {
   const [activeSection, setActiveSection] = useState("trends");
   const [searchQuery, setSearchQuery]     = useState("");
 
@@ -482,6 +495,7 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
   const githubCount = githubNew.length + githubHot.length;
 
   const counts: Record<string, number> = {
+    personal: 1,
     trends: topics.length, knowledge: 6,
     "hot-ranking": hotRanking.length,
     "pm-focus":    pmHighlights.length,
@@ -623,6 +637,7 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
           </div>
 
           {!q && <Coverage coverage={digest.coverage} />}
+          {!q && editionControls}
           {/* Editor Note */}
           {!q && digest.coreInsight && <CoreInsight insight={digest.coreInsight} />}
           {!q && !digest.coreInsight && digest.editorNote && (
@@ -634,6 +649,7 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
               <DigestText className="digest-editor-prose">{digest.editorNote}</DigestText>
             </div>
           )}
+          {!q && !digest.coreInsight && !digest.editorNote && <div className="digest-empty mb-6"><h2 className="digest-subheading">本期洞见暂不可用</h2><p>这份历史日报未包含通过校验的核心洞见，可先阅读来源资讯。新一期通过完整性校验后才会发布。</p></div>}
 
           {/* Search results */}
           {q && (
@@ -644,7 +660,7 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
                 <span className="text-[13px] text-[var(--text-muted)]">· {filteredItems?.length ?? 0} 条资讯 / {filteredTopics.length} 个专题</span>
                 <button onClick={() => setSearchQuery("")} className="ml-auto text-[12px] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors border border-[var(--border-light)] rounded-lg px-3 py-1">清除</button>
               </div>
-              <div className="space-y-4 mb-5">{filteredTopics.map((topic) => <TopicCard key={topic.id} topic={topic}/>)}</div>
+              <div className="space-y-4 mb-5">{filteredTopics.map((topic) => <TopicCard key={topic.id} topic={topic} editionDate={digest.date}/>)}</div>
               <div className="digest-grid">
                 {(filteredItems ?? []).map((item, i) => (
                   <ItemCard key={item.id} item={item} rank={i}  />
@@ -659,7 +675,8 @@ export function DigestView({ digest }: { digest: DailyDigest }) {
           {/* Main content */}
           {!q && (
             <>
-              <TrendSection topics={topics} background={digest.backgroundTopics} generation={digest.topicGeneration} />
+              <PersonalDesk items={allItems} date={digest.date}/>
+              <TrendSection date={digest.date} topics={topics} background={digest.backgroundTopics} generation={digest.topicGeneration} />
               <KnowledgeGraph items={allItems} topics={allTopics} />
               {/* ── 全球热榜 ── */}
               {hotRanking.length > 0 && (

@@ -1,30 +1,31 @@
 import { topicEditions } from "@/lib/topic-editions";
 import { CoreInsight, DailyDigest, TrendTopic } from "@/types";
 import { selectCoreInsight } from "@/lib/core-insight";
-import { DigestView } from "@/components/DigestView";
+import { EditionBrowser } from "@/components/EditionBrowser";
+import { compareEditions, displayDigest } from "@/lib/edition-display";
+import { isCompleteTopic } from "@/lib/editorial-quality";
 import { promises as fs } from "fs";
 import path from "path";
 
 async function getLatestDigest(): Promise<DailyDigest | null> {
   try {
-    const latestPath = path.join(process.cwd(), "data", "digests", "latest.json");
-    const raw = await fs.readFile(latestPath, "utf-8");
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
+    const dir=path.join(process.cwd(),"public/editions");
+    const dates:string[]=JSON.parse(await fs.readFile(path.join(dir,"index.json"),"utf8"));
+    if(dates.length)return displayDigest(JSON.parse(await fs.readFile(path.join(dir,`${dates[0]}.json`),"utf8")),dates[0]);
+  } catch { /* Only the validated static archive can be rendered. */ }
+  return null;
 }
 
 async function getTopics(digest: DailyDigest) {
   // Editorial briefings are explicitly dated, independent of generated news.
   // Only show them in the current trend window; do not pin an old launch forever.
   const files = await fs.readdir(path.join(process.cwd(), "data/briefings")).catch(() => []);
-  const briefings = await Promise.all(files.filter((f) => f.endsWith(".json")).map(async (file) =>
-    JSON.parse(await fs.readFile(path.join(process.cwd(), "data/briefings", file), "utf8")) as TrendTopic
-  ));
+  const briefings = (await Promise.all(files.filter((f) => f.endsWith(".json")).map(async (file) => {
+    try { const topic=JSON.parse(await fs.readFile(path.join(process.cwd(), "data/briefings", file), "utf8")) as TrendTopic; return isCompleteTopic(topic)?[topic]:[]; } catch {return [];}
+  }))).flat();
   const historyFiles = await fs.readdir(path.join(process.cwd(), "data/digests")).catch(() => []);
   const history = await Promise.all(historyFiles.filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f) && f.slice(0,10) < digest.date).sort().reverse().slice(0, 14).map(async (file) => {
-    try { const edition = JSON.parse(await fs.readFile(path.join(process.cwd(), "data/digests", file), "utf8")) as DailyDigest; return edition.topics ?? []; } catch { return []; }
+    try { const edition = displayDigest(JSON.parse(await fs.readFile(path.join(process.cwd(), "data/digests", file), "utf8"))); return (edition.topics ?? []).filter(isCompleteTopic); } catch { return []; }
   }));
   return topicEditions(digest.date, digest.topics ?? [], [...briefings, ...history.flat()]);
 }
@@ -34,16 +35,11 @@ export default async function Home() {
 
   if (!digest) {
     return (
-      <div className="flex items-center justify-center min-h-screen" style={{ background: "#0F0F0F" }}>
-        <div className="text-center">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500/20 to-violet-500/20 border border-blue-500/20 flex items-center justify-center mx-auto mb-4">
-            <span className="text-xl">⚡</span>
-          </div>
-          <h1 className="text-[18px] font-semibold text-[#C0C0C0] mb-2">AI Frontier</h1>
-          <p className="text-[13px] text-[#505050] mb-5">首次运行需先执行数据生成脚本</p>
-          <code className="block text-[12px] text-emerald-400 bg-[#161616] border border-[#2A2A2A] px-4 py-2.5 rounded-xl font-mono">
-            npm run generate
-          </code>
+      <div className="flex items-center justify-center min-h-screen p-6">
+        <div className="digest-card digest-card-padding max-w-md">
+          <h1 className="digest-card-title mb-2">pupu 的 AI 日报</h1>
+          <p className="digest-body">完整日报暂时无法读取，请稍后再来。你的浏览器个人收藏与批注仍保留在本地。</p>
+          <a className="digest-link digest-caption block mt-3" href="https://github.com/pupujanet-eng/ai-frontier/actions">查看更新状态 ↗</a>
         </div>
       </div>
     );
@@ -53,5 +49,8 @@ export default async function Home() {
   const correction = await fs.readFile(path.join(process.cwd(), "data/editorials", `${digest.date}.json`), "utf8")
     .then((raw) => JSON.parse(raw) as CoreInsight).catch(() => undefined);
   const coreInsight = selectCoreInsight(digest.date, digest.coreInsight, correction);
-  return <DigestView digest={{ ...digest, topics, backgroundTopics, coreInsight }} />;
+  const dates:string[]=await fs.readFile(path.join(process.cwd(),"public/editions/index.json"),"utf8").then((raw)=>JSON.parse(raw)).catch(()=>[]);
+  const previousDate=dates.find((date)=>date<digest.date);
+  const previous=previousDate ? await fs.readFile(path.join(process.cwd(),"public/editions",`${previousDate}.json`),"utf8").then((raw)=>displayDigest(JSON.parse(raw))).catch(()=>undefined) : undefined;
+  return <EditionBrowser initial={{ ...digest, topics, backgroundTopics, coreInsight, comparison:compareEditions(digest,previous) }} dates={[...new Set([digest.date,...dates])].sort().reverse()} />;
 }

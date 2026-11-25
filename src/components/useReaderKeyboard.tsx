@@ -56,7 +56,7 @@ export function useReaderKeyboard(clearSearch: () => void, navigate: (id: string
 export function KeyboardHelp() {
   return <dialog id="keyboard-help" className="digest-dialog" aria-labelledby="keyboard-help-title">
     <h2 id="keyboard-help-title" className="digest-card-title mb-4">键盘阅读</h2>
-    <dl className="digest-shortcuts">{[["j / k · ↑ / ↓", "下一条 / 上一条"], ["PageDown / PageUp", "下翻 / 上翻一屏"], ["空格 / Shift + 空格", "下翻 / 上翻一屏"], ["1–9", "跳到对应栏目"], ["/", "搜索资讯与专题"], ["Enter", "展开卡片详情或打开原文"], ["Esc", "退出搜索 / 关闭帮助"], ["?", "打开本帮助"]].map(([key, text]) => <div key={key} className="contents"><dt><kbd>{key}</kbd></dt><dd>{text}</dd></div>)}</dl>
+    <dl className="digest-shortcuts">{[["j / k · ↑ / ↓", "下一条 / 上一条"], ["PageDown / PageUp", "下翻 / 上翻一屏"], ["空格 / Shift + 空格", "下翻 / 上翻一屏"], ["0 / 1–9", "我的阅读 / 对应栏目"], ["/", "搜索资讯与专题"], ["Enter", "展开卡片详情或打开原文"], ["Esc", "退出搜索 / 关闭帮助"], ["?", "打开本帮助"]].map(([key, text]) => <div key={key} className="contents"><dt><kbd>{key}</kbd></dt><dd>{text}</dd></div>)}</dl>
     <p className="digest-caption mt-5">输入文字、中文输入法选词时不触发快捷键。Tab 可依次访问链接和按钮。</p>
     <form method="dialog" className="mt-5"><button className="digest-button">关闭</button></form>
   </dialog>;
