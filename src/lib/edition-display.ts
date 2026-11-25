@@ -14,6 +14,7 @@ export function compareEditions(current:DailyDigest,previous?:DailyDigest):Daily
 export function displayDigest(value:unknown,expectedDate?:string):DailyDigest {
   if(!value||typeof value!=="object")throw new Error("日报数据格式不正确");
   const d=value as DailyDigest;
+  if(d.editionNote!==undefined&&(typeof d.editionNote!=="string"||d.editionNote.length>300))throw new Error("日报说明格式不正确");
   if(typeof d.date!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(d.date)||new Date(`${d.date}T00:00:00Z`).toISOString().slice(0,10)!==d.date||(expectedDate&&d.date!==expectedDate)||typeof d.dateZh!=="string")throw new Error("日报日期不正确");
   const fields=["hotRanking","pmHighlights","githubNew","githubHot","research","industry","thoughtLeaders","chinese","highlights","github"] as const;
   if(fields.some((field)=>d[field]!==undefined&&!Array.isArray(d[field])))throw new Error("日报栏目格式不正确");

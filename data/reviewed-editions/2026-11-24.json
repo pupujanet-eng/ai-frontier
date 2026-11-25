@@ -1,0 +1,1115 @@
+{
+  "schemaVersion": 3,
+  "date": "2026-11-24",
+  "dateZh": "2026年11月24日星期二",
+  "editionNote": "11 月 24 日补编版 · 原文日期保留，附近期背景材料",
+  "hotRanking": [
+    {
+      "id": "b5129d6fc89af52d",
+      "title": "Introducing Claude Ship",
+      "titleZh": "Claude Ship 把代码审查、修复和审批连起来",
+      "summary": "Editorial brief: Introducing Claude Ship",
+      "summaryZh": "Anthropic 发布 Claude Ship：Code Review 负责审查，PR Steward 处理检查失败和反馈，Claude Approvals 按团队策略决定哪些变更可以批准。后两者仍处于测试阶段，官方建议先用观察模式验证审批策略。",
+      "whyItMatters": "编辑建议：同时统计交付速度与回滚率，把可自动批准的变更写成具体规则。",
+      "limitations": "产品公告及内部案例不能证明所有代码库都能获得相同收益，使用还会产生 token 费用。",
+      "insight": "",
+      "importance": 10,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "agents",
+        "governance"
+      ],
+      "url": "https://claude.com/resources/articles/introducing-claude-ship",
+      "source": "Anthropic · Claude",
+      "category": "industry",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-23",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "agents",
+        "governance",
+        "products"
+      ]
+    },
+    {
+      "id": "8befc30ac765ba8a",
+      "title": "MCP servers can now ship skills, run tasks, and more with Claude",
+      "titleZh": "MCP 扩展到操作指导、后台任务和中途确认",
+      "summary": "Editorial brief: MCP servers can now ship skills, run tasks, and more with Claude",
+      "summaryZh": "Claude 宣布 Skills over MCP 公开测试，让服务器随工具提供操作指导并按需加载；Tasks 和 Elicitation 已正式可用，支持后台任务和执行中的用户输入。文件传输仍将陆续推出，各套餐进度不同。",
+      "whyItMatters": "编辑建议：连接器需要同时设计任务状态、等待用户的时机与恢复入口。",
+      "limitations": "这是 Claude 客户端的支持进展，其他客户端的兼容性需要逐项核对。",
+      "insight": "",
+      "importance": 9,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "agents",
+        "products"
+      ],
+      "url": "https://claude.com/resources/articles/skills-over-mcp-tasks-and-more",
+      "source": "Anthropic · Claude",
+      "category": "industry",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-24",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "agents",
+        "products",
+        "infrastructure"
+      ]
+    },
+    {
+      "id": "00d52199bef25f9e",
+      "title": "How to build and maintain an agentic evaluation",
+      "titleZh": "Agent 测评要检查最后的产物，也要检查评分器",
+      "summary": "Editorial brief: How to build and maintain an agentic evaluation",
+      "summaryZh": "Hugging Face 发布 Agent 评测指南，以数据拟合任务说明：除了让参考解通过测试，还应测试空操作和投机捷径能否骗过评分器。执行记录可以区分提前结束、环境故障与求解错误。",
+      "whyItMatters": "编辑建议：把偶尔能做成与反复都能做成分开统计，后者更适合评估无人值守。",
+      "limitations": "小规模开发集用于说明方法，不能直接外推成所有业务场景的模型排名。",
+      "insight": "",
+      "importance": 9,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "agents",
+        "governance"
+      ],
+      "url": "https://huggingface.co/blog/agentic-evals",
+      "source": "Hugging Face",
+      "category": "research",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-23",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "agents",
+        "governance"
+      ]
+    },
+    {
+      "id": "3ffa5c39e01e3431",
+      "title": "Finding faster quantum algorithms with agents and formal verification",
+      "titleZh": "DeepMind 用 Agent 与形式化验证改进量子算法",
+      "summary": "Editorial brief: Finding faster quantum algorithms with agents and formal verification",
+      "summaryZh": "Google DeepMind 介绍让 Gemini 4 Agent 团队寻找更高效量子电路的研究，并用 Lean 检查数学证明。团队开放相关库、问题描述及验证后的解；目标电路仍难以在现有硬件上完整测试。",
+      "whyItMatters": "编辑判断：验收规则明确、错误可被外部程序发现的科研子任务，适合优先尝试自动化。",
+      "limitations": "数学性质得到证明不等于现实应用已经成熟，实际硬件成本与误差仍需验证。",
+      "insight": "",
+      "importance": 9,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "models",
+        "agents"
+      ],
+      "url": "https://deepmind.google/blog/finding-faster-quantum-algorithms-with-agents-and-formal-verification/",
+      "source": "Google DeepMind",
+      "category": "research",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-23T16:59:40.000Z",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "models",
+        "agents",
+        "governance"
+      ]
+    },
+    {
+      "id": "d9615c8c024ea5a2",
+      "title": "GPT-6 models demonstrate intrinsic protein-design capabilities",
+      "titleZh": "OpenAI 报告蛋白设计能力，完整流程仍需验证",
+      "summary": "Editorial brief: GPT-6 models demonstrate intrinsic protein-design capabilities",
+      "summaryZh": "OpenAI 发布蛋白设计预印本介绍，报告 GPT-6 系列可用推理和通用代码工具提出结构与序列设计。部分设计进入实验并显示结合信号，但候选筛选仍借助专用模型，尚未证明能脱离专用模型完成全流程。",
+      "whyItMatters": "编辑判断：应分别核查方案、计算筛选、实验结果与可重复性，逐段记录证据。",
+      "limitations": "团队报告的结合信号不等于药物有效性；功能、安全和独立复现仍需进一步验证。",
+      "insight": "",
+      "importance": 9,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "models",
+        "governance"
+      ],
+      "url": "https://openai.com/index/gpt-6-models-demonstrate-intrinsic-protein-design-capabilities/",
+      "source": "OpenAI",
+      "category": "research",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-24",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "models",
+        "governance"
+      ]
+    },
+    {
+      "id": "b3db646d86cce70f",
+      "title": "Turn artifacts into Mac and Windows apps",
+      "titleZh": "Claude Artifacts 开始支持安装为桌面应用",
+      "summary": "Editorial brief: Turn artifacts into Mac and Windows apps",
+      "summaryZh": "Anthropic 推出测试版 Install as app，让部分 Artifacts 在 Mac 和 Windows 上以独立窗口运行。应用可调用 Claude 和连接器，完整电脑访问需另行授权，更新后会重新询问权限。",
+      "whyItMatters": "编辑判断：生成页面正在向日常工具靠近，验收需要覆盖升级、权限与数据保存。",
+      "limitations": "打开应用仍需联网并登录；并非所有 Artifact 类型都支持安装，组织也可能限制功能。",
+      "insight": "",
+      "importance": 8,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "products",
+        "governance"
+      ],
+      "url": "https://claude.com/resources/articles/install-as-app",
+      "source": "Anthropic · Claude",
+      "category": "industry",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-24",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "products",
+        "governance"
+      ]
+    },
+    {
+      "id": "89c1b5008b7af961",
+      "title": "Introducing Inkling 2 Mini",
+      "titleZh": "Inkling 2 Mini 用循环层计算探索小模型效率",
+      "summary": "Editorial brief: Introducing Inkling 2 Mini",
+      "summaryZh": "Thinking Machines Lab 发布开放权重的 Inkling 2 Mini。官方介绍其循环 Transformer 会对每个 token 重复运行中间层，以增加内部计算；定位包含本地运行和编程任务，并讨论了可观察性。",
+      "whyItMatters": "编辑判断：输出文字变少，不能单独证明整次任务更省算力，应同时看耗时和资源占用。",
+      "limitations": "跑分与内存说明来自厂商设置，不同量化方式、机器和任务需要同条件复测。",
+      "insight": "",
+      "importance": 8,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "models",
+        "infrastructure"
+      ],
+      "url": "https://thinkingmachines.ai/news/inkling-2-mini/",
+      "source": "Thinking Machines Lab",
+      "category": "research",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-20",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "models",
+        "infrastructure"
+      ]
+    },
+    {
+      "id": "056cf0b58a3dbace",
+      "title": "Introducing Tool Retrieval in the Gemini API",
+      "titleZh": "Gemini 工具检索按需加载参数，减少上下文负担",
+      "summary": "Editorial brief: Introducing Tool Retrieval in the Gemini API",
+      "summaryZh": "Google 在 Gemini Interactions API 中预览 Tool Retrieval：模型先看到工具名称与描述，需要时再加载完整参数定义。常用工具可以预先提供，长尾工具延迟加载，也支持客户端自行检索。",
+      "whyItMatters": "编辑建议：对比输入量、调用准确率与总延迟，并检查遗漏工具和重试是否抵消费用收益。",
+      "limitations": "实际收益取决于工具库与调用分布，已加载的定义仍计入后续上下文。",
+      "insight": "",
+      "importance": 8,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "agents",
+        "infrastructure"
+      ],
+      "url": "https://blog.google/innovation-and-ai/technology/developers-tools/gemini-api-tool-retrieval",
+      "source": "Google AI",
+      "category": "industry",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-19T18:00:00.000Z",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "agents",
+        "infrastructure"
+      ]
+    },
+    {
+      "id": "4f5fe20de68e9dfd",
+      "title": "A more tailored Google Search that’s uniquely yours",
+      "titleZh": "Google Search 进一步连接个人信息",
+      "summary": "Editorial brief: A more tailored Google Search that’s uniquely yours",
+      "summaryZh": "Google 宣布 AI Mode 的 Personal Intelligence 开始支持用户主动连接 Wallet，Drive 和 Gemini 应用将在随后数周跟进。Wallet 连接用于读取信息，不能移动、管理或投资资金。",
+      "whyItMatters": "编辑建议：个性化产品应清楚展示连接了什么、用了什么信息，以及怎样撤回授权。",
+      "limitations": "这是分阶段上线计划，地区、账户及组织可用性须以实际入口为准。",
+      "insight": "",
+      "importance": 8,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "products",
+        "business"
+      ],
+      "url": "https://blog.google/products-and-platforms/products/search/google-search-personal-intelligence-apps",
+      "source": "Google AI",
+      "category": "industry",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-23T17:00:00.000Z",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "products",
+        "business",
+        "governance"
+      ]
+    },
+    {
+      "id": "701a571706ec6c00",
+      "title": "Introducing harness adapters: adapt your favorite model to your harness to improve performance and cost",
+      "titleZh": "Harness adapters 将训练对准实际 Agent 工作流",
+      "summary": "Editorial brief: Introducing harness adapters: adapt your favorite model to your harness to improve performance and cost",
+      "summaryZh": "Hugging Face 展示在不同 Agent 执行框架中训练 LoRA 适配器的方法，并公开相关任务、训练和评测材料。目标是让模型适应实际工具和交互方式，同时衡量任务成功率与 token 消耗。",
+      "whyItMatters": "编辑建议：先把常见任务和失败记录整理成评测集，再判断是否值得投入适配训练。",
+      "limitations": "效果依赖基础模型、任务分布与执行框架，特定基准的改善不能直接外推。",
+      "insight": "",
+      "importance": 8,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "models",
+        "agents"
+      ],
+      "url": "https://huggingface.co/blog/harness-adapters-at-scale",
+      "source": "Hugging Face",
+      "category": "research",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-20",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "models",
+        "agents",
+        "infrastructure"
+      ]
+    }
+  ],
+  "pmHighlights": [],
+  "githubNew": [],
+  "githubHot": [],
+  "research": [
+    {
+      "id": "00d52199bef25f9e",
+      "title": "How to build and maintain an agentic evaluation",
+      "titleZh": "Agent 测评要检查最后的产物，也要检查评分器",
+      "summary": "Editorial brief: How to build and maintain an agentic evaluation",
+      "summaryZh": "Hugging Face 发布 Agent 评测指南，以数据拟合任务说明：除了让参考解通过测试，还应测试空操作和投机捷径能否骗过评分器。执行记录可以区分提前结束、环境故障与求解错误。",
+      "whyItMatters": "编辑建议：把偶尔能做成与反复都能做成分开统计，后者更适合评估无人值守。",
+      "limitations": "小规模开发集用于说明方法，不能直接外推成所有业务场景的模型排名。",
+      "insight": "",
+      "importance": 9,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "agents",
+        "governance"
+      ],
+      "url": "https://huggingface.co/blog/agentic-evals",
+      "source": "Hugging Face",
+      "category": "research",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-23",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "agents",
+        "governance"
+      ]
+    },
+    {
+      "id": "89c1b5008b7af961",
+      "title": "Introducing Inkling 2 Mini",
+      "titleZh": "Inkling 2 Mini 用循环层计算探索小模型效率",
+      "summary": "Editorial brief: Introducing Inkling 2 Mini",
+      "summaryZh": "Thinking Machines Lab 发布开放权重的 Inkling 2 Mini。官方介绍其循环 Transformer 会对每个 token 重复运行中间层，以增加内部计算；定位包含本地运行和编程任务，并讨论了可观察性。",
+      "whyItMatters": "编辑判断：输出文字变少，不能单独证明整次任务更省算力，应同时看耗时和资源占用。",
+      "limitations": "跑分与内存说明来自厂商设置，不同量化方式、机器和任务需要同条件复测。",
+      "insight": "",
+      "importance": 8,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "models",
+        "infrastructure"
+      ],
+      "url": "https://thinkingmachines.ai/news/inkling-2-mini/",
+      "source": "Thinking Machines Lab",
+      "category": "research",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-20",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "models",
+        "infrastructure"
+      ]
+    },
+    {
+      "id": "3ffa5c39e01e3431",
+      "title": "Finding faster quantum algorithms with agents and formal verification",
+      "titleZh": "DeepMind 用 Agent 与形式化验证改进量子算法",
+      "summary": "Editorial brief: Finding faster quantum algorithms with agents and formal verification",
+      "summaryZh": "Google DeepMind 介绍让 Gemini 4 Agent 团队寻找更高效量子电路的研究，并用 Lean 检查数学证明。团队开放相关库、问题描述及验证后的解；目标电路仍难以在现有硬件上完整测试。",
+      "whyItMatters": "编辑判断：验收规则明确、错误可被外部程序发现的科研子任务，适合优先尝试自动化。",
+      "limitations": "数学性质得到证明不等于现实应用已经成熟，实际硬件成本与误差仍需验证。",
+      "insight": "",
+      "importance": 9,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "models",
+        "agents"
+      ],
+      "url": "https://deepmind.google/blog/finding-faster-quantum-algorithms-with-agents-and-formal-verification/",
+      "source": "Google DeepMind",
+      "category": "research",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-23T16:59:40.000Z",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "models",
+        "agents",
+        "governance"
+      ]
+    },
+    {
+      "id": "d9615c8c024ea5a2",
+      "title": "GPT-6 models demonstrate intrinsic protein-design capabilities",
+      "titleZh": "OpenAI 报告蛋白设计能力，完整流程仍需验证",
+      "summary": "Editorial brief: GPT-6 models demonstrate intrinsic protein-design capabilities",
+      "summaryZh": "OpenAI 发布蛋白设计预印本介绍，报告 GPT-6 系列可用推理和通用代码工具提出结构与序列设计。部分设计进入实验并显示结合信号，但候选筛选仍借助专用模型，尚未证明能脱离专用模型完成全流程。",
+      "whyItMatters": "编辑判断：应分别核查方案、计算筛选、实验结果与可重复性，逐段记录证据。",
+      "limitations": "团队报告的结合信号不等于药物有效性；功能、安全和独立复现仍需进一步验证。",
+      "insight": "",
+      "importance": 9,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "models",
+        "governance"
+      ],
+      "url": "https://openai.com/index/gpt-6-models-demonstrate-intrinsic-protein-design-capabilities/",
+      "source": "OpenAI",
+      "category": "research",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-24",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "models",
+        "governance"
+      ]
+    },
+    {
+      "id": "701a571706ec6c00",
+      "title": "Introducing harness adapters: adapt your favorite model to your harness to improve performance and cost",
+      "titleZh": "Harness adapters 将训练对准实际 Agent 工作流",
+      "summary": "Editorial brief: Introducing harness adapters: adapt your favorite model to your harness to improve performance and cost",
+      "summaryZh": "Hugging Face 展示在不同 Agent 执行框架中训练 LoRA 适配器的方法，并公开相关任务、训练和评测材料。目标是让模型适应实际工具和交互方式，同时衡量任务成功率与 token 消耗。",
+      "whyItMatters": "编辑建议：先把常见任务和失败记录整理成评测集，再判断是否值得投入适配训练。",
+      "limitations": "效果依赖基础模型、任务分布与执行框架，特定基准的改善不能直接外推。",
+      "insight": "",
+      "importance": 8,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "models",
+        "agents"
+      ],
+      "url": "https://huggingface.co/blog/harness-adapters-at-scale",
+      "source": "Hugging Face",
+      "category": "research",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-20",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "models",
+        "agents",
+        "infrastructure"
+      ]
+    }
+  ],
+  "industry": [
+    {
+      "id": "b5129d6fc89af52d",
+      "title": "Introducing Claude Ship",
+      "titleZh": "Claude Ship 把代码审查、修复和审批连起来",
+      "summary": "Editorial brief: Introducing Claude Ship",
+      "summaryZh": "Anthropic 发布 Claude Ship：Code Review 负责审查，PR Steward 处理检查失败和反馈，Claude Approvals 按团队策略决定哪些变更可以批准。后两者仍处于测试阶段，官方建议先用观察模式验证审批策略。",
+      "whyItMatters": "编辑建议：同时统计交付速度与回滚率，把可自动批准的变更写成具体规则。",
+      "limitations": "产品公告及内部案例不能证明所有代码库都能获得相同收益，使用还会产生 token 费用。",
+      "insight": "",
+      "importance": 10,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "agents",
+        "governance"
+      ],
+      "url": "https://claude.com/resources/articles/introducing-claude-ship",
+      "source": "Anthropic · Claude",
+      "category": "industry",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-23",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "agents",
+        "governance",
+        "products"
+      ]
+    },
+    {
+      "id": "8befc30ac765ba8a",
+      "title": "MCP servers can now ship skills, run tasks, and more with Claude",
+      "titleZh": "MCP 扩展到操作指导、后台任务和中途确认",
+      "summary": "Editorial brief: MCP servers can now ship skills, run tasks, and more with Claude",
+      "summaryZh": "Claude 宣布 Skills over MCP 公开测试，让服务器随工具提供操作指导并按需加载；Tasks 和 Elicitation 已正式可用，支持后台任务和执行中的用户输入。文件传输仍将陆续推出，各套餐进度不同。",
+      "whyItMatters": "编辑建议：连接器需要同时设计任务状态、等待用户的时机与恢复入口。",
+      "limitations": "这是 Claude 客户端的支持进展，其他客户端的兼容性需要逐项核对。",
+      "insight": "",
+      "importance": 9,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "agents",
+        "products"
+      ],
+      "url": "https://claude.com/resources/articles/skills-over-mcp-tasks-and-more",
+      "source": "Anthropic · Claude",
+      "category": "industry",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-24",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "agents",
+        "products",
+        "infrastructure"
+      ]
+    },
+    {
+      "id": "b3db646d86cce70f",
+      "title": "Turn artifacts into Mac and Windows apps",
+      "titleZh": "Claude Artifacts 开始支持安装为桌面应用",
+      "summary": "Editorial brief: Turn artifacts into Mac and Windows apps",
+      "summaryZh": "Anthropic 推出测试版 Install as app，让部分 Artifacts 在 Mac 和 Windows 上以独立窗口运行。应用可调用 Claude 和连接器，完整电脑访问需另行授权，更新后会重新询问权限。",
+      "whyItMatters": "编辑判断：生成页面正在向日常工具靠近，验收需要覆盖升级、权限与数据保存。",
+      "limitations": "打开应用仍需联网并登录；并非所有 Artifact 类型都支持安装，组织也可能限制功能。",
+      "insight": "",
+      "importance": 8,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "products",
+        "governance"
+      ],
+      "url": "https://claude.com/resources/articles/install-as-app",
+      "source": "Anthropic · Claude",
+      "category": "industry",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-24",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "products",
+        "governance"
+      ]
+    },
+    {
+      "id": "056cf0b58a3dbace",
+      "title": "Introducing Tool Retrieval in the Gemini API",
+      "titleZh": "Gemini 工具检索按需加载参数，减少上下文负担",
+      "summary": "Editorial brief: Introducing Tool Retrieval in the Gemini API",
+      "summaryZh": "Google 在 Gemini Interactions API 中预览 Tool Retrieval：模型先看到工具名称与描述，需要时再加载完整参数定义。常用工具可以预先提供，长尾工具延迟加载，也支持客户端自行检索。",
+      "whyItMatters": "编辑建议：对比输入量、调用准确率与总延迟，并检查遗漏工具和重试是否抵消费用收益。",
+      "limitations": "实际收益取决于工具库与调用分布，已加载的定义仍计入后续上下文。",
+      "insight": "",
+      "importance": 8,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "agents",
+        "infrastructure"
+      ],
+      "url": "https://blog.google/innovation-and-ai/technology/developers-tools/gemini-api-tool-retrieval",
+      "source": "Google AI",
+      "category": "industry",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-19T18:00:00.000Z",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "agents",
+        "infrastructure"
+      ]
+    },
+    {
+      "id": "4f5fe20de68e9dfd",
+      "title": "A more tailored Google Search that’s uniquely yours",
+      "titleZh": "Google Search 进一步连接个人信息",
+      "summary": "Editorial brief: A more tailored Google Search that’s uniquely yours",
+      "summaryZh": "Google 宣布 AI Mode 的 Personal Intelligence 开始支持用户主动连接 Wallet，Drive 和 Gemini 应用将在随后数周跟进。Wallet 连接用于读取信息，不能移动、管理或投资资金。",
+      "whyItMatters": "编辑建议：个性化产品应清楚展示连接了什么、用了什么信息，以及怎样撤回授权。",
+      "limitations": "这是分阶段上线计划，地区、账户及组织可用性须以实际入口为准。",
+      "insight": "",
+      "importance": 8,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "products",
+        "business"
+      ],
+      "url": "https://blog.google/products-and-platforms/products/search/google-search-personal-intelligence-apps",
+      "source": "Google AI",
+      "category": "industry",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-23T17:00:00.000Z",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "products",
+        "business",
+        "governance"
+      ]
+    }
+  ],
+  "thoughtLeaders": [],
+  "chinese": [],
+  "editorNote": "",
+  "coreInsight": {
+    "date": "2026-11-24",
+    "origin": "curated",
+    "takeaway": "AI 正在接手更长的工作流程，落地重点也随之转向：用外部证据验收结果，按整次任务计算成本，并把执行权限写清楚。",
+    "highlights": [
+      "外部证据",
+      "整次任务",
+      "执行权限"
+    ],
+    "points": [
+      {
+        "title": "Agent 接管更多步骤，验收和授权也要跟上",
+        "fact": "Claude Ship 连接审查、修复与策略审批；Hugging Face 同期强调检查最终产物和评分器。任务链越长，越需要说清楚什么算做完。",
+        "meaning": "编辑判断：团队值得投入的是验收规则、权限边界和失败恢复，把能生成变成能交付。",
+        "watch": "观察重复执行的通过率、人工接管比例，以及错误变更的回滚率。",
+        "highlights": [
+          "验收规则",
+          "权限边界"
+        ],
+        "sourceIds": [
+          "b5129d6fc89af52d",
+          "00d52199bef25f9e"
+        ]
+      },
+      {
+        "title": "模型效率要算整次任务，不能只数输出文字",
+        "fact": "Inkling 2 Mini 重复运行内部层；Google 的工具检索按需加载参数定义。两条路线分别改变内部计算和外部上下文负担。",
+        "meaning": "编辑判断：输出 token 少未必代表总成本低，应把成功率、耗时、重试和资源占用放在同一张账单里。",
+        "watch": "用固定任务集比较成功完成一次任务的总费用与等待时间。",
+        "highlights": [
+          "内部计算",
+          "总成本"
+        ],
+        "sourceIds": [
+          "89c1b5008b7af961",
+          "056cf0b58a3dbace"
+        ]
+      },
+      {
+        "title": "科研进步值得关注，证明与实验仍各有一关",
+        "fact": "DeepMind 用 Lean 检查量子算法结果；OpenAI 的蛋白设计研究包含实验检验，并仍依赖专用模型筛选。两者采用不同的外部验收。",
+        "meaning": "编辑判断：科研 Agent 是否可靠，要看结论由什么证据支撑，以及检查覆盖了哪一段流程。",
+        "watch": "跟踪开放验证材料、独立复现与实际应用中新出现的限制。",
+        "highlights": [
+          "外部验收",
+          "独立复现"
+        ],
+        "sourceIds": [
+          "3ffa5c39e01e3431",
+          "d9615c8c024ea5a2"
+        ]
+      }
+    ],
+    "boundary": "本期以厂商公告和研究报告为主。测试版功能、实验结果与基准表现各有适用范围，尚不能推导为普遍可靠的无人值守能力。",
+    "sources": [
+      {
+        "id": "b5129d6fc89af52d",
+        "title": "Introducing Claude Ship",
+        "url": "https://claude.com/resources/articles/introducing-claude-ship",
+        "source": "Anthropic · Claude",
+        "kind": "primary",
+        "publishedAt": "2026-11-23"
+      },
+      {
+        "id": "8befc30ac765ba8a",
+        "title": "MCP servers can now ship skills, run tasks, and more with Claude",
+        "url": "https://claude.com/resources/articles/skills-over-mcp-tasks-and-more",
+        "source": "Anthropic · Claude",
+        "kind": "primary",
+        "publishedAt": "2026-11-24"
+      },
+      {
+        "id": "b3db646d86cce70f",
+        "title": "Turn artifacts into Mac and Windows apps",
+        "url": "https://claude.com/resources/articles/install-as-app",
+        "source": "Anthropic · Claude",
+        "kind": "primary",
+        "publishedAt": "2026-11-24"
+      },
+      {
+        "id": "00d52199bef25f9e",
+        "title": "How to build and maintain an agentic evaluation",
+        "url": "https://huggingface.co/blog/agentic-evals",
+        "source": "Hugging Face",
+        "kind": "primary",
+        "publishedAt": "2026-11-23"
+      },
+      {
+        "id": "89c1b5008b7af961",
+        "title": "Introducing Inkling 2 Mini",
+        "url": "https://thinkingmachines.ai/news/inkling-2-mini/",
+        "source": "Thinking Machines Lab",
+        "kind": "primary",
+        "publishedAt": "2026-11-20"
+      },
+      {
+        "id": "3ffa5c39e01e3431",
+        "title": "Finding faster quantum algorithms with agents and formal verification",
+        "url": "https://deepmind.google/blog/finding-faster-quantum-algorithms-with-agents-and-formal-verification/",
+        "source": "Google DeepMind",
+        "kind": "primary",
+        "publishedAt": "2026-11-23T16:59:40.000Z"
+      },
+      {
+        "id": "d9615c8c024ea5a2",
+        "title": "GPT-6 models demonstrate intrinsic protein-design capabilities",
+        "url": "https://openai.com/index/gpt-6-models-demonstrate-intrinsic-protein-design-capabilities/",
+        "source": "OpenAI",
+        "kind": "primary",
+        "publishedAt": "2026-11-24"
+      },
+      {
+        "id": "056cf0b58a3dbace",
+        "title": "Introducing Tool Retrieval in the Gemini API",
+        "url": "https://blog.google/innovation-and-ai/technology/developers-tools/gemini-api-tool-retrieval",
+        "source": "Google AI",
+        "kind": "primary",
+        "publishedAt": "2026-11-19T18:00:00.000Z"
+      },
+      {
+        "id": "4f5fe20de68e9dfd",
+        "title": "A more tailored Google Search that’s uniquely yours",
+        "url": "https://blog.google/products-and-platforms/products/search/google-search-personal-intelligence-apps",
+        "source": "Google AI",
+        "kind": "primary",
+        "publishedAt": "2026-11-23T17:00:00.000Z"
+      },
+      {
+        "id": "701a571706ec6c00",
+        "title": "Introducing harness adapters: adapt your favorite model to your harness to improve performance and cost",
+        "url": "https://huggingface.co/blog/harness-adapters-at-scale",
+        "source": "Hugging Face",
+        "kind": "primary",
+        "publishedAt": "2026-11-20"
+      }
+    ]
+  },
+  "topics": [
+    {
+      "id": "delivery-evidence-2026-11-24",
+      "title": "Agent 走向交付：把“做完了”变成可核查的事实",
+      "thesis": "编辑判断：Agent 开始处理代码审批和长期任务，产品价值更依赖验收、权限与恢复能力。能说明结果怎样被检查，比一次顺利演示更有决策价值。",
+      "whyNow": "11 月 23–24 日，Claude Ship、MCP 长任务支持和 Agent 评测指南先后更新；近期科研工作也强调外部验证。这些材料从不同侧面提出了同一个问题：交付到底怎样验收。",
+      "layers": [
+        "agents",
+        "products",
+        "governance"
+      ],
+      "sections": [
+        {
+          "heading": "工作链延长，检查方式需要跟上",
+          "body": "Claude Ship 将审查、修复与审批组织为不同角色，MCP 更新支持后台任务及中途索取用户输入。Hugging Face 的指南要求检查最终状态和评测器本身。三份材料分别讨论产品与方法，放在一起看，Agent 从单次回答走向持续执行时，完成状态也需要更明确的证据。",
+          "kind": "fact",
+          "sourceIds": [
+            "b5129d6fc89af52d",
+            "8befc30ac765ba8a",
+            "00d52199bef25f9e"
+          ]
+        },
+        {
+          "heading": "机制：连接目标、执行记录和验收条件",
+          "body": "编辑分析：交付可以分成三层。第一层定义目标与可接受结果；第二层记录调用了什么、改变了什么；第三层用测试、审批或其他独立检查确认结果。缺少其中一层，一句已经完成就可能掩盖未保存文件、失败检查或缺失许可。这是基于材料提出的工程建议，并非所有产品已经具备的功能。",
+          "kind": "analysis",
+          "sourceIds": [
+            "00d52199bef25f9e",
+            "b5129d6fc89af52d"
+          ]
+        },
+        {
+          "heading": "产品怎么做：失败也应当有明确出口",
+          "body": "编辑建议：先选可回滚、验收条件清晰的任务试点。界面区分运行中、等待输入、失败与已验收，并保留最后的成功步骤；审批动作记录当时适用的规则。上线时同时记录人工接管原因、重试次数和恢复耗时，这些数据有助于判断下一步应该改模型、工具，还是流程本身。",
+          "kind": "analysis",
+          "sourceIds": [
+            "8befc30ac765ba8a",
+            "b5129d6fc89af52d"
+          ]
+        },
+        {
+          "heading": "边界：一次通过，只证明检查覆盖的内容",
+          "body": "编辑分析：代码测试、自然语言审批策略和形式化证明覆盖范围不同。DeepMind 的量子算法研究提供了用 Lean 核查结果的实例，但数学性质得到证明仍不等于现实部署条件都已满足。每个通过结论都应附上适用前提，同时列出未检查的情况，为这些情况保留人工复核和回退路径。",
+          "kind": "uncertainty",
+          "sourceIds": [
+            "3ffa5c39e01e3431",
+            "00d52199bef25f9e"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "id": "b5129d6fc89af52d",
+          "title": "Introducing Claude Ship",
+          "url": "https://claude.com/resources/articles/introducing-claude-ship",
+          "source": "Anthropic · Claude",
+          "kind": "primary",
+          "publishedAt": "2026-11-23"
+        },
+        {
+          "id": "8befc30ac765ba8a",
+          "title": "MCP servers can now ship skills, run tasks, and more with Claude",
+          "url": "https://claude.com/resources/articles/skills-over-mcp-tasks-and-more",
+          "source": "Anthropic · Claude",
+          "kind": "primary",
+          "publishedAt": "2026-11-24"
+        },
+        {
+          "id": "00d52199bef25f9e",
+          "title": "How to build and maintain an agentic evaluation",
+          "url": "https://huggingface.co/blog/agentic-evals",
+          "source": "Hugging Face",
+          "kind": "primary",
+          "publishedAt": "2026-11-23"
+        },
+        {
+          "id": "3ffa5c39e01e3431",
+          "title": "Finding faster quantum algorithms with agents and formal verification",
+          "url": "https://deepmind.google/blog/finding-faster-quantum-algorithms-with-agents-and-formal-verification/",
+          "source": "Google DeepMind",
+          "kind": "primary",
+          "publishedAt": "2026-11-23T16:59:40.000Z"
+        }
+      ],
+      "watchNext": [
+        "记录固定任务连续三次均通过的比例，以及提前宣告完成的次数。",
+        "记录试点仓库人工审批比例、合并后回滚率和每次有效交付的总费用。"
+      ],
+      "updatedAt": "2026-11-24",
+      "origin": "generated"
+    },
+    {
+      "id": "task-economics-2026-11-24",
+      "title": "从模型到工作流：怎样看懂 AI 效率提升",
+      "thesis": "编辑判断：循环层、按需工具加载和工作流适配器优化的是不同环节。应比较一次合格交付的总成本，再判断某项技术是否值得接入。",
+      "whyNow": "11 月 19–23 日，Google 发布工具检索预览，Thinking Machines Lab 发布循环架构模型，Hugging Face 介绍工作流适配器并更新评测指南。这些进展适合放进同一套成本与质量框架理解。",
+      "layers": [
+        "models",
+        "agents",
+        "infrastructure",
+        "business"
+      ],
+      "sections": [
+        {
+          "heading": "三种办法分别优化了哪里",
+          "body": "Inkling 2 Mini 重复运行模型内部层，Google Tool Retrieval 延迟加载暂时不用的工具参数，Hugging Face 的 harness adapters 针对执行框架训练适配器。前者调整内部计算，第二种控制上下文，第三种适配任务环境；三者解决的问题不同，不能把各自的演示和分数直接放在一起排名。",
+          "kind": "fact",
+          "sourceIds": [
+            "89c1b5008b7af961",
+            "056cf0b58a3dbace",
+            "701a571706ec6c00"
+          ]
+        },
+        {
+          "heading": "一张可比较的账单要记录什么",
+          "body": "编辑建议：固定任务、材料、工具权限和验收方法后，同时记录模型费用、工具调用费用、等待时间与失败后的重做。本地模型还要记录设备占用，云端模型则核对计费单位和缓存。把总开销除以通过验收的任务数，可以得到更接近业务价值的指标，同时保留失败案例，避免只看到成功样本。",
+          "kind": "analysis",
+          "sourceIds": [
+            "056cf0b58a3dbace",
+            "701a571706ec6c00"
+          ]
+        },
+        {
+          "heading": "测评环境也会改变选型结论",
+          "body": "编辑分析：同一模型接入不同工具和执行框架，会面对不同的信息与动作空间。评测集需要可重复的标准任务，也需要真实业务中的例外。Hugging Face 的指南强调运行记录和评分器检查，提醒团队先确认分数衡量了什么，再决定是否需要更大模型、更多重试或额外训练。",
+          "kind": "analysis",
+          "sourceIds": [
+            "00d52199bef25f9e",
+            "701a571706ec6c00"
+          ]
+        },
+        {
+          "heading": "边界：少写文字与少花钱是不同指标",
+          "body": "编辑分析：可见输出量不能完整表示内部计算；按需检索可能增加调用步骤，适配训练还有前期投入。当前材料给出具体设计和实验，但不足以保证每种任务都获得相同收益。团队应先设成功率与时延底线，再在达到底线的方案中比较成本；任务分布或执行框架变化后还应重新测量。",
+          "kind": "uncertainty",
+          "sourceIds": [
+            "89c1b5008b7af961",
+            "056cf0b58a3dbace",
+            "701a571706ec6c00"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "id": "00d52199bef25f9e",
+          "title": "How to build and maintain an agentic evaluation",
+          "url": "https://huggingface.co/blog/agentic-evals",
+          "source": "Hugging Face",
+          "kind": "primary",
+          "publishedAt": "2026-11-23"
+        },
+        {
+          "id": "89c1b5008b7af961",
+          "title": "Introducing Inkling 2 Mini",
+          "url": "https://thinkingmachines.ai/news/inkling-2-mini/",
+          "source": "Thinking Machines Lab",
+          "kind": "primary",
+          "publishedAt": "2026-11-20"
+        },
+        {
+          "id": "056cf0b58a3dbace",
+          "title": "Introducing Tool Retrieval in the Gemini API",
+          "url": "https://blog.google/innovation-and-ai/technology/developers-tools/gemini-api-tool-retrieval",
+          "source": "Google AI",
+          "kind": "primary",
+          "publishedAt": "2026-11-19T18:00:00.000Z"
+        },
+        {
+          "id": "701a571706ec6c00",
+          "title": "Introducing harness adapters: adapt your favorite model to your harness to improve performance and cost",
+          "url": "https://huggingface.co/blog/harness-adapters-at-scale",
+          "source": "Hugging Face",
+          "kind": "primary",
+          "publishedAt": "2026-11-20"
+        }
+      ],
+      "watchNext": [
+        "在同一任务集比较验收通过率、总费用、端到端时延与重试次数。",
+        "记录工具检索是否减少无效上下文，以及是否新增漏选或重复检索。"
+      ],
+      "updatedAt": "2026-11-24",
+      "origin": "generated"
+    }
+  ],
+  "topicGeneration": {
+    "status": "complete",
+    "attempted": 2,
+    "published": 2,
+    "failures": []
+  },
+  "highlights": [
+    {
+      "id": "b5129d6fc89af52d",
+      "title": "Introducing Claude Ship",
+      "titleZh": "Claude Ship 把代码审查、修复和审批连起来",
+      "summary": "Editorial brief: Introducing Claude Ship",
+      "summaryZh": "Anthropic 发布 Claude Ship：Code Review 负责审查，PR Steward 处理检查失败和反馈，Claude Approvals 按团队策略决定哪些变更可以批准。后两者仍处于测试阶段，官方建议先用观察模式验证审批策略。",
+      "whyItMatters": "编辑建议：同时统计交付速度与回滚率，把可自动批准的变更写成具体规则。",
+      "limitations": "产品公告及内部案例不能证明所有代码库都能获得相同收益，使用还会产生 token 费用。",
+      "insight": "",
+      "importance": 10,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "agents",
+        "governance"
+      ],
+      "url": "https://claude.com/resources/articles/introducing-claude-ship",
+      "source": "Anthropic · Claude",
+      "category": "industry",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-23",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "agents",
+        "governance",
+        "products"
+      ]
+    },
+    {
+      "id": "8befc30ac765ba8a",
+      "title": "MCP servers can now ship skills, run tasks, and more with Claude",
+      "titleZh": "MCP 扩展到操作指导、后台任务和中途确认",
+      "summary": "Editorial brief: MCP servers can now ship skills, run tasks, and more with Claude",
+      "summaryZh": "Claude 宣布 Skills over MCP 公开测试，让服务器随工具提供操作指导并按需加载；Tasks 和 Elicitation 已正式可用，支持后台任务和执行中的用户输入。文件传输仍将陆续推出，各套餐进度不同。",
+      "whyItMatters": "编辑建议：连接器需要同时设计任务状态、等待用户的时机与恢复入口。",
+      "limitations": "这是 Claude 客户端的支持进展，其他客户端的兼容性需要逐项核对。",
+      "insight": "",
+      "importance": 9,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "agents",
+        "products"
+      ],
+      "url": "https://claude.com/resources/articles/skills-over-mcp-tasks-and-more",
+      "source": "Anthropic · Claude",
+      "category": "industry",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-24",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "agents",
+        "products",
+        "infrastructure"
+      ]
+    },
+    {
+      "id": "b3db646d86cce70f",
+      "title": "Turn artifacts into Mac and Windows apps",
+      "titleZh": "Claude Artifacts 开始支持安装为桌面应用",
+      "summary": "Editorial brief: Turn artifacts into Mac and Windows apps",
+      "summaryZh": "Anthropic 推出测试版 Install as app，让部分 Artifacts 在 Mac 和 Windows 上以独立窗口运行。应用可调用 Claude 和连接器，完整电脑访问需另行授权，更新后会重新询问权限。",
+      "whyItMatters": "编辑判断：生成页面正在向日常工具靠近，验收需要覆盖升级、权限与数据保存。",
+      "limitations": "打开应用仍需联网并登录；并非所有 Artifact 类型都支持安装，组织也可能限制功能。",
+      "insight": "",
+      "importance": 8,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "products",
+        "governance"
+      ],
+      "url": "https://claude.com/resources/articles/install-as-app",
+      "source": "Anthropic · Claude",
+      "category": "industry",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-24",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "products",
+        "governance"
+      ]
+    },
+    {
+      "id": "00d52199bef25f9e",
+      "title": "How to build and maintain an agentic evaluation",
+      "titleZh": "Agent 测评要检查最后的产物，也要检查评分器",
+      "summary": "Editorial brief: How to build and maintain an agentic evaluation",
+      "summaryZh": "Hugging Face 发布 Agent 评测指南，以数据拟合任务说明：除了让参考解通过测试，还应测试空操作和投机捷径能否骗过评分器。执行记录可以区分提前结束、环境故障与求解错误。",
+      "whyItMatters": "编辑建议：把偶尔能做成与反复都能做成分开统计，后者更适合评估无人值守。",
+      "limitations": "小规模开发集用于说明方法，不能直接外推成所有业务场景的模型排名。",
+      "insight": "",
+      "importance": 9,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "agents",
+        "governance"
+      ],
+      "url": "https://huggingface.co/blog/agentic-evals",
+      "source": "Hugging Face",
+      "category": "research",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-23",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "agents",
+        "governance"
+      ]
+    },
+    {
+      "id": "89c1b5008b7af961",
+      "title": "Introducing Inkling 2 Mini",
+      "titleZh": "Inkling 2 Mini 用循环层计算探索小模型效率",
+      "summary": "Editorial brief: Introducing Inkling 2 Mini",
+      "summaryZh": "Thinking Machines Lab 发布开放权重的 Inkling 2 Mini。官方介绍其循环 Transformer 会对每个 token 重复运行中间层，以增加内部计算；定位包含本地运行和编程任务，并讨论了可观察性。",
+      "whyItMatters": "编辑判断：输出文字变少，不能单独证明整次任务更省算力，应同时看耗时和资源占用。",
+      "limitations": "跑分与内存说明来自厂商设置，不同量化方式、机器和任务需要同条件复测。",
+      "insight": "",
+      "importance": 8,
+      "relevance": "general",
+      "labelType": "general",
+      "tags": [
+        "models",
+        "infrastructure"
+      ],
+      "url": "https://thinkingmachines.ai/news/inkling-2-mini/",
+      "source": "Thinking Machines Lab",
+      "category": "research",
+      "date": "2026-11-24",
+      "publishedAt": "2026-11-20",
+      "sourceKind": "primary",
+      "evidenceQuality": "substantial",
+      "layers": [
+        "models",
+        "infrastructure"
+      ]
+    }
+  ],
+  "github": [],
+  "coverage": {
+    "fetchedAt": "2026-11-26",
+    "lookbackDays": 7,
+    "sources": [
+      {
+        "source": "Anthropic · Claude",
+        "url": "https://claude.com/resources/articles/introducing-claude-ship",
+        "status": "ok",
+        "items": 3,
+        "undated": 0
+      },
+      {
+        "source": "Hugging Face",
+        "url": "https://huggingface.co/blog/agentic-evals",
+        "status": "ok",
+        "items": 2,
+        "undated": 0
+      },
+      {
+        "source": "Thinking Machines Lab",
+        "url": "https://thinkingmachines.ai/news/inkling-2-mini/",
+        "status": "ok",
+        "items": 1,
+        "undated": 0
+      },
+      {
+        "source": "Google DeepMind",
+        "url": "https://deepmind.google/blog/finding-faster-quantum-algorithms-with-agents-and-formal-verification/",
+        "status": "ok",
+        "items": 1,
+        "undated": 0
+      },
+      {
+        "source": "OpenAI",
+        "url": "https://openai.com/index/gpt-6-models-demonstrate-intrinsic-protein-design-capabilities/",
+        "status": "ok",
+        "items": 1,
+        "undated": 0
+      },
+      {
+        "source": "Google AI",
+        "url": "https://blog.google/innovation-and-ai/technology/developers-tools/gemini-api-tool-retrieval",
+        "status": "ok",
+        "items": 2,
+        "undated": 0
+      }
+    ],
+    "selected": 10,
+    "published": 10,
+    "warnings": [
+      "本期为逐项核对公开来源后的补编；资料按原文标注的 11 月 24 日及此前一周日期收录。",
+      "原文仅标日历日期时保留该日期，不补造具体发布时间；公告中的产品状态不代表每个账号均已开放。",
+      "未取得历史 GitHub 热榜快照，本期不补造该栏目。"
+    ]
+  }
+}

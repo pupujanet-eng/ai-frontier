@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       skip_generate:
-        description: "跳过生成，使用最近保存的日报构建"
+        description: "仅部署已有完整日报，不调用模型；取消勾选才尝试生成新一期（仍受当日熔断限制）"
         type: boolean
-        default: false
+        default: true
       resume_model_service:
         description: "已更新 API key 或恢复服务：解除接口错误熔断，保留当日用量和预算限制"
         type: boolean
@@ -39,6 +39,15 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
+      - name: Explain selected operation
+        run: |
+          if [ "$SKIP_GENERATE" = "true" ]; then
+            echo '### 本次仅部署完整日报' >> "$GITHUB_STEP_SUMMARY"
+            echo '不调用模型，不修改当日费用账本。恢复已刊或核对后的补编内容，再校验并发布。' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '### 本次尝试生成并部署' >> "$GITHUB_STEP_SUMMARY"
+            echo '只有生成完整时才发布。重复运行不会重置预算、请求次数或校验失败计数；如仅需更新页面，请新建手动运行并勾选 skip_generate。' >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Validate code and editorial data
         run: |
           npm test
@@ -84,7 +93,9 @@ jobs:
                 break;
               } catch { core.warning(`Archive ${artifact.id} could not be verified; trying an older snapshot`); }
             }
-            if (!recovered) core.setFailed('No verified edition archive is available; keep the currently published site');
+            if (!recovered) core.warning('No verified edition archive is available; trying tracked reviewed editions before the publication gate');
+      - name: Apply reviewed complete editions
+        run: npx tsx scripts/apply-reviewed-editions.ts
       - name: Restore daily model budget
         id: budget
         if: ${{ env.SKIP_GENERATE != 'true' }}
@@ -135,7 +146,6 @@ jobs:
       - name: Require both editorial sections before publishing
         run: npx tsx scripts/verify-edition.ts
       - name: Save verified editions
-        if: ${{ env.SKIP_GENERATE != 'true' }}
         uses: actions/cache/save@v4
         with:
           path: |
