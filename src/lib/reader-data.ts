@@ -8,7 +8,7 @@ export const INTENTS = { none: "未标记", try: "值得试试", watch: "继续�
 export const VOTES = { positive: "看好", uncertain: "存疑", evidence: "还需证据" };
 type Stamp<T> = { value: T; at: string };
 export interface ReaderProfile { role: keyof typeof ROLES; layers: KnowledgeLayer[]; minutes: 5 | 10 | 20 }
-export interface Snapshot { id: string; kind: "article" | "topic"; title: string; excerpt: string; date: string; url: string; source: string; layers: KnowledgeLayer[] }
+export interface Snapshot { id: string; kind: "article" | "topic"; title: string; excerpt: string; date: string; url: string; source: string; layers: KnowledgeLayer[]; dateKind?: "published" | "collected" | "updated" }
 export interface Note { id: string; at: string; text: string }
 export interface Judgment { id: string; at: string; vote: keyof typeof VOTES; reviewOf?: string; text: string }
 export interface ReaderRecord {
@@ -22,8 +22,8 @@ export interface ReaderData {
 const epoch = "1970-01-01T00:00:00.000Z";
 export function emptyReader(): ReaderData { return { app: "ai-frontier-reader", version: 1, profile: {value:{role:"curious",layers:[],minutes:5},at:epoch},records:[],picks:[] }; }
 export function newRecord(snapshot: Snapshot): ReaderRecord { return {snapshot:{...snapshot,layers:[...snapshot.layers]},saved:{value:false,at:epoch},read:{value:false,at:epoch},intent:{value:"none",at:epoch},notes:[],judgments:[]}; }
-export function articleSnapshot(item: DigestItem): Snapshot { return {id:`article:${item.id}`,kind:"article",title:item.titleZh || item.title,excerpt:item.summaryZh || item.summary,date:item.date,url:item.url,source:item.source,layers:layersForItem(item)}; }
-export function topicSnapshot(topic: TrendTopic): Snapshot { return {id:`topic:${topic.id}`,kind:"topic",title:topic.title,excerpt:topic.thesis,date:topic.updatedAt.slice(0,10),url:topic.sources[0]?.url || "https://pupujanet-eng.github.io/ai-frontier/",source:"多源专题",layers:topic.layers}; }
+export function articleSnapshot(item: DigestItem): Snapshot { return {id:`article:${item.id}`,kind:"article",title:item.titleZh || item.title,excerpt:item.summaryZh || item.summary,date:item.publishedAt?.slice(0,10)||item.date,dateKind:item.publishedAt?"published":"collected",url:item.url,source:item.source,layers:layersForItem(item)}; }
+export function topicSnapshot(topic: TrendTopic): Snapshot { return {id:`topic:${topic.id}`,kind:"topic",title:topic.title,excerpt:topic.thesis,date:topic.updatedAt.slice(0,10),dateKind:"updated",url:topic.sources[0]?.url || "https://pupujanet-eng.github.io/ai-frontier/",source:"多源专题",layers:topic.layers}; }
 export function safeURL(value: unknown): value is string {
   if (typeof value !== "string") return false;
   try { const u = new URL(value); return ["https:","http:"].includes(u.protocol) && !u.username && !u.password; } catch { return false; }
@@ -52,7 +52,7 @@ export function parseReader(raw: string): ReaderData {
   const records = unique(array(o.records,2000).map((value):ReaderRecord => {
     const r=object(value), s=object(r.snapshot);
     if (!safeURL(s.url)) throw new Error("备份含不安全或无效的原文链接");
-    const snapshot:Snapshot={id:id(s.id),kind:choice(s.kind,["article","topic"]),title:text(s.title,500),excerpt:text(s.excerpt,6000,true),date:date(s.date),url:s.url,source:text(s.source,200),layers:layers(s.layers)};
+    const snapshot:Snapshot={id:id(s.id),kind:choice(s.kind,["article","topic"]),title:text(s.title,500),excerpt:text(s.excerpt,6000,true),date:date(s.date),url:s.url,source:text(s.source,200),layers:layers(s.layers),...(s.dateKind===undefined?{}:{dateKind:choice(s.dateKind,["published","collected","updated"] as const)})};
     if (!snapshot.id.startsWith(`${snapshot.kind}:`)) throw new Error("备份条目类型不匹配");
     const notes=unique(array(r.notes,100).map((v)=>{const n=object(v);return {id:id(n.id),at:at(n.at),text:text(n.text,1200)};}),(n)=>n.id);
     const judgments=unique(array(r.judgments,100).map((v):Judgment=>{const j=object(v);return {id:id(j.id),at:at(j.at),vote:choice(j.vote,Object.keys(VOTES) as (keyof typeof VOTES)[]),text:text(j.text,1200,true),...(j.reviewOf ? {reviewOf:id(j.reviewOf)} : {})};}),(j)=>j.id);
@@ -79,3 +79,5 @@ export function rankForReader(items:DigestItem[],profile:ReaderProfile) {
     return {item,score:match.length*20+(role?10:0)+(item.importance||0),reason:match.length ? `关注方向：${match.map((l)=>KNOWLEDGE_LAYERS.find((n)=>n.id===l)!.label).join("、")}` : role ? `与你的「${ROLES[profile.role]}」角色相关` : "按本期编辑重要度补充视野"};
   }).sort((a,b)=>b.score-a.score||a.item.id.localeCompare(b.item.id)).slice(0,profile.minutes===5?3:profile.minutes===10?5:8);
 }
+
+export function snapshotDateText(snapshot:Snapshot):string { return `${snapshot.dateKind==="published"?"原文":snapshot.dateKind==="collected"?"收录":snapshot.dateKind==="updated"?"专题更新":"资料日期"} ${snapshot.date}`; }

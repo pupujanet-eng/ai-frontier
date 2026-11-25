@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { emptyReader, mergeReader, newRecord, parseReader, rankForReader, READER_KEY, reviewDue, type Snapshot } from "../src/lib/reader-data";
+import { articleSnapshot, snapshotDateText, emptyReader, mergeReader, newRecord, parseReader, rankForReader, READER_KEY, reviewDue, type Snapshot } from "../src/lib/reader-data";
 import { ReaderStore, type StorageLike } from "../src/lib/reader-store";
 import { readFileSync } from "node:fs";
 import type { DailyDigest } from "../src/types";
@@ -65,4 +65,12 @@ test("personal ranking uses explicit interests and reading-time limits without a
   const items=d.hotRanking.map((i,n)=>({...i,id:String(n),layers:n===0?["agents" as const]:["models" as const],importance:n===0?1:10}));
   const before=JSON.stringify(items);const ranked=rankForReader(items,{role:"product",layers:["agents"],minutes:5});
   assert.equal(ranked[0].item.id,"0");assert.ok(ranked.length<=3);assert.match(ranked[0].reason,/Agent/);assert.equal(JSON.stringify(items),before);
+});
+
+test("share snapshots distinguish original publication dates from collection dates",()=>{
+  const d:DailyDigest=JSON.parse(readFileSync("data/digests/latest.json","utf8"));
+  const item={...d.hotRanking[0],date:"2026-10-19",publishedAt:"2026-10-13T09:00:00Z"};
+  const original=articleSnapshot(item);assert.equal(snapshotDateText(original),"原文 2026-10-13");
+  assert.equal(snapshotDateText(articleSnapshot({...item,publishedAt:undefined})),"收录 2026-10-19");
+  const backup=data();backup.records[0].snapshot=original;assert.equal(parseReader(JSON.stringify(backup)).records[0].snapshot.dateKind,"published");
 });

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { snapshotDateText } from "@/lib/reader-data";
 import { useReader } from "./ReaderProvider";
 
 export function downloadFile(content:Blob,filename:string) {
@@ -27,7 +28,7 @@ export function ShareCard({date}:{date:string}) {
       const y=160+i*(includeNotes?440:340);ctx.fillStyle="#FEFEFE";ctx.fillRect(40,y,1000,(includeNotes?440:340)-20);
       line(`${String(i+1).padStart(2,"0")}  ${r.snapshot.title}`,64,y+45,29,"#1A1A18",2,940,true);
       line(r.snapshot.excerpt,64,y+147,23,"#5A5A56",3,940);
-      line(`${r.snapshot.date} · ${r.snapshot.source}`,64,y+263,19,"#777770",1,940);
+      line(`${snapshotDateText(r.snapshot)} · ${r.snapshot.source}`,64,y+263,19,"#777770",1,940);
       line(r.snapshot.url,64,y+294,17,"#2563EB",1,940);
       if(includeNotes)line(`我的批注：${r.notes.at(-1)?.text || "暂未添加"}`,64,y+337,22,"#5A5A56",2,940);
     });
@@ -38,14 +39,14 @@ export function ShareCard({date}:{date:string}) {
     canvas.current.toBlob((blob)=>blob?resolve(blob):reject(new Error("图片生成失败")),"image/png");
   });
   return <div className="mt-4">
-    <p className="digest-caption">在资讯或专题上选择「＋ 今日三条」。分享卡保留原文日期与来源，默认不包含私人批注。</p>
+    <p className="digest-caption">在资讯或专题上选择「＋ 今日三条」。分享卡保留资料日期与来源；原文无日期时明确标注收录日期。默认不包含私人批注。</p>
     {!selected.length?<p className="digest-empty mt-3">还没有选择，最多可选 3 条。</p>:<>
       <label className="digest-caption flex items-center gap-2 my-3"><input type="checkbox" checked={includeNotes} onChange={(e)=>setIncludeNotes(e.target.checked)}/>在分享卡中包含我的最后一条批注</label>
       <canvas ref={canvas} className="reader-share-preview" role="img" aria-label={`${date} 我的今日三条分享卡：${selected.map((r)=>r.snapshot.title).join("；")}`}/>
       <div className="reader-toolbar mt-3">
         <button className="digest-button" onClick={async()=>{try{downloadFile(await png(),`ai-frontier-${date}.png`);setMessage("图片已生成，下载后可发送给朋友");}catch{setMessage("图片下载失败，请使用复制文字");}}}>下载图片</button>
         <button className="reader-chip" onClick={async()=>{try{const blob=await png();await navigator.clipboard.write([new ClipboardItem({"image/png":blob})]);setMessage("图片已复制");}catch{setMessage("当前浏览器不支持复制图片或未授予权限，请下载图片");}}}>复制图片</button>
-        <button className="reader-chip" onClick={async()=>{const text=`我的今日三条 · ${date}\n\n${selected.map((r,i)=>`${i+1}. ${r.snapshot.title}\n${r.snapshot.excerpt}\n${r.snapshot.date} · ${r.snapshot.source}\n${r.snapshot.url}${includeNotes&&r.notes.length?`\n我的批注：${r.notes.at(-1)!.text}`:""}`).join("\n\n")}`;try{await navigator.clipboard.writeText(text);setMessage("文字与完整链接已复制");}catch{downloadFile(new Blob([text],{type:"text/plain;charset=utf-8"}),`ai-frontier-${date}.txt`);setMessage("复制不可用，已提供文字文件下载");}}}>复制文字与链接</button>
+        <button className="reader-chip" onClick={async()=>{const text=`我的今日三条 · ${date}\n\n${selected.map((r,i)=>`${i+1}. ${r.snapshot.title}\n${r.snapshot.excerpt}\n${snapshotDateText(r.snapshot)} · ${r.snapshot.source}\n${r.snapshot.url}${includeNotes&&r.notes.length?`\n我的批注：${r.notes.at(-1)!.text}`:""}`).join("\n\n")}`;try{await navigator.clipboard.writeText(text);setMessage("文字与完整链接已复制");}catch{downloadFile(new Blob([text],{type:"text/plain;charset=utf-8"}),`ai-frontier-${date}.txt`);setMessage("复制不可用，已提供文字文件下载");}}}>复制文字与链接</button>
       </div>
     </>}
     {message&&<p role="status" className="digest-caption mt-2">{message}</p>}
